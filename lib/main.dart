@@ -1,129 +1,60 @@
 import 'package:flutter/material.dart';
+import 'dart:async'; // For the Timer function
+import 'home_page.dart'; // Import the main page
 
-void main() => runApp(MaterialApp(home: RFIDTagCheckPage()));
+void main() {
+  runApp(MyApp());
+}
 
-class RFIDTagCheckPage extends StatelessWidget {
+class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Color(0xFFCDC4C4), // Background color from the mockup
-      appBar: AppBar(
-        backgroundColor: Colors.grey[200],
-        title: Row(
-          children: [
-            Image.asset(
-              'assets/logo.png', // Add your logo image to assets
-              height: 30,
-            ),
-            SizedBox(width: 10),
-            Text(
-              'Labsco Sport',
-              style: TextStyle(
-                color: Colors.black,
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Center(
-              child: Text(
-                'RFID Tag Check',
-                style: TextStyle(color: Colors.black, fontSize: 16),
-              ),
-            ),
-          ),
-          Container(
-            width: 200,
-            padding: const EdgeInsets.all(8.0),
-            child: TextField(
-              decoration: InputDecoration(
-                contentPadding: EdgeInsets.symmetric(horizontal: 10),
-                hintText: "Enter BIP Number",
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(5),
-                ),
-              ),
-            ),
-          ),
-          
-          // Updated part: IconButton with dropdown included
-          PopupMenuButton<String>(
-            icon: Icon(Icons.menu, color: Colors.black),
-            onSelected: (value) {
-              // Handle selection, for now, print the selected value
-              print('Selected: $value');
-              // You can navigate to other pages based on the selection
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                    builder: (context) => DetailPage(option: value)),
-              );
-            },
-            itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
-              PopupMenuItem<String>(
-                value: 'Option 1',
-                child: Text('Option 1'),
-              ),
-              PopupMenuItem<String>(
-                value: 'Option 2',
-                child: Text('Option 2'),
-              ),
-              PopupMenuItem<String>(
-                value: 'Option 3',
-                child: Text('Option 3'),
-              ),
-            ],
-          ),
-        ],
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      title: 'RFID Tag Check',
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
       ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.wifi_tethering,
-              size: 100,
-              color: Colors.black54,
-            ),
-            SizedBox(height: 20),
-            Text(
-              'Scan RFID Tag or Enter BIP Number',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Colors.black,
-              ),
-            ),
-          ],
-        ),
-      ),
+      home: SplashScreen(), // Splash screen as the initial page
     );
   }
 }
 
-// New page for displaying selected option details
-class DetailPage extends StatelessWidget {
-  final String option;
+class SplashScreen extends StatefulWidget {
+  @override
+  _SplashScreenState createState() => _SplashScreenState();
+}
 
-  DetailPage({required this.option});
+class _SplashScreenState extends State<SplashScreen> {
+  @override
+  void initState() {
+    super.initState();
+
+    // Show the splash screen for 3 seconds
+    Timer(Duration(seconds: 3), () {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (context) => HomePage(), // Redirect to your main page
+        ),
+      );
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Selected: $option'),
-        backgroundColor: Colors.grey[200],
-        iconTheme: IconThemeData(color: Colors.black),
-        titleTextStyle: TextStyle(color: Colors.black),
-      ),
-      body: Center(
-        child: Text(
-          'You selected: $option',
-          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+      body: Container(
+        decoration: BoxDecoration(
+          image: DecorationImage(
+            image: AssetImage('assets/regulus.png'), // Your logo image
+            fit: BoxFit.cover, // Make the image cover the entire screen
+          ),
+        ),
+        child: Center(
+          // You can place any widgets here, e.g., a loading indicator
+          child: CircularProgressIndicator(
+            color: Colors.white, // Optional: change the color of the loading indicator
+          ),
         ),
       ),
     );
