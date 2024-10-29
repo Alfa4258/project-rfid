@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:io';
 import 'rfid_check_page.dart';
 import 'display_settings_page.dart';
+import 'race_result_page.dart';
 
 class HomePage extends StatelessWidget {
   final File? backgroundImage;  // File for the background image
@@ -43,6 +44,11 @@ class HomePage extends StatelessWidget {
                   context,
                   MaterialPageRoute(builder: (context) => RFIDTagCheckPage()),
                 );
+              } else if (value == 'Race Result') {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => RaceResultPage()),
+                  );
               } else if (value == 'Display Settings') {
                 final pickedImage = await Navigator.push(
                   context,
@@ -75,6 +81,13 @@ class HomePage extends StatelessWidget {
                   title: Text('RFID Tag Check'),
                 ),
               ),
+              PopupMenuItem<String>(
+                  value: 'Race Result',
+                  child: ListTile(
+                    leading: Icon(Icons.insert_chart_outlined_outlined),
+                    title: Text('Race Result'),
+                  ),
+                ),
               PopupMenuItem<String>(
                 value: 'Display Settings',
                 child: ListTile(

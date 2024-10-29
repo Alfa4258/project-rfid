@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
-import 'api_service.dart';  // Import the ApiService
-import 'display_bib.dart'; // Import the BibDetailsPage
-import 'home_page.dart';   // Import the HomePage
-import 'display_settings_page.dart';  // Import the ChangeBackgroundPage
-import 'race_result_page.dart';
+import 'api_service.dart';  
+import 'home_page.dart';   
+import 'display_settings_page.dart';  
+import 'rfid_check_page.dart'; 
+import 'display_race_result.dart';
 
-class RFIDTagCheckPage extends StatefulWidget {
+class RaceResultPage extends StatefulWidget {
   @override
-  _RFIDTagCheckPageState createState() => _RFIDTagCheckPageState();
+  _RaceResultPageState createState() => _RaceResultPageState();
 }
 
-class _RFIDTagCheckPageState extends State<RFIDTagCheckPage> {
+class _RaceResultPageState extends State<RaceResultPage> {
   final TextEditingController _bibController = TextEditingController();
   final ApiService apiService = ApiService(); // Create an instance of ApiService
 
@@ -84,8 +84,8 @@ class _RFIDTagCheckPageState extends State<RFIDTagCheckPage> {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => BibDetailsPage(
-                          bibDetails: bibDetails,
+                        builder: (context) => RaceResultsDetailsPage(
+                          RaceResultsDetails: bibDetails,
                         ),
                       ),
                     );
