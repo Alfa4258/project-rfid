@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'rfid_check_page.dart';
 import 'home_page.dart'; // Make sure to import the HomePage
+import 'race_result_page.dart';
 import 'dart:io';
 
 class ChangeBackgroundPage extends StatefulWidget {
@@ -81,6 +82,11 @@ class ChangeBackgroundPageState extends State<ChangeBackgroundPage> {
                     context,
                     MaterialPageRoute(builder: (context) => RFIDTagCheckPage()),
                   );
+                } else if (value == 'Race Result') {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => RaceResultPage()),
+                  );
                 } else if (value == 'Display Settings') {
                   Navigator.push(
                     context,
@@ -101,6 +107,13 @@ class ChangeBackgroundPageState extends State<ChangeBackgroundPage> {
                   child: ListTile(
                     leading: Icon(Icons.info),
                     title: Text('RFID Tag Check'),
+                  ),
+                ),
+                PopupMenuItem<String>(
+                  value: 'Race Result',
+                  child: ListTile(
+                    leading: Icon(Icons.insert_chart_outlined_outlined),
+                    title: Text('Race Result'),
                   ),
                 ),
                 PopupMenuItem<String>(

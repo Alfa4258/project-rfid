@@ -5,37 +5,36 @@ import 'rfid_check_page.dart'; // Import RFIDTagCheckPage
 import 'display_settings_page.dart';  // Import ChangeBackgroundPage
 import 'race_result_page.dart';
 
-class BibDetailsPage extends StatefulWidget {
-  final Map<String, dynamic> bibDetails;
+class RaceResultsDetailsPage extends StatefulWidget {
+  final Map<String, dynamic> RaceResultsDetails;
   final ApiService apiService = ApiService(); // Initialize ApiService
 
-  BibDetailsPage({required this.bibDetails});
+  RaceResultsDetailsPage({required this.RaceResultsDetails});
 
   @override
-  _BibDetailsPageState createState() => _BibDetailsPageState();
+  _RaceResultsDetailsPageState createState() => _RaceResultsDetailsPageState();
 }
 
-class _BibDetailsPageState extends State<BibDetailsPage> {
+class _RaceResultsDetailsPageState extends State<RaceResultsDetailsPage> {
   final TextEditingController _bibController = TextEditingController();  // Controller for the search bar
-  Map<String, dynamic>? _currentBibDetails;
+    Map<String, dynamic>? _currentBibDetails;
 
   @override
   void initState() {
     super.initState();
-    _currentBibDetails = widget.bibDetails;  // Initialize with the passed BIB details
+    _currentBibDetails = widget.RaceResultsDetails;  // Initialize with the passed BIB details
   }
 
   @override
   Widget build(BuildContext context) {
     return WillPopScope(
       onWillPop: () async {
-        // Navigate to HomePage when the back button is pressed
         Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(builder: (context) => HomePage()),
-          (route) => false, // Remove all previous routes
+          (route) => false,
         );
-        return false; // Prevent default back navigation
+        return false;
       },
       child: Scaffold(
         backgroundColor: Color(0xFFCDC4C4),
@@ -157,56 +156,121 @@ class _BibDetailsPageState extends State<BibDetailsPage> {
             ? Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Text(
-                      'BIB Number: ${_currentBibDetails!['bib_number']}',
-                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                    Container(
+                      padding: EdgeInsets.symmetric(vertical: 16.0),
+                      color: Colors.black,
+                      child: Center(
+                        child: Text(
+                          'BIB ${_currentBibDetails!['bib_number']}',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 36.0,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
                     ),
-                    SizedBox(height: 10),
-                    Text(
-                      'First Name: ${_currentBibDetails!['first_name']}',
-                      style: TextStyle(fontSize: 18),
+                    SizedBox(height: 16.0),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: [
+                        Column(
+                          children: [
+                            Icon(Icons.person, color: Colors.black54),
+                            Text('Name', style: TextStyle(color: Colors.black54)),
+                            Text(
+                              '${_currentBibDetails!['first_name']} ${_currentBibDetails!['last_name']}',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 18.0,
+                              ),
+                            ),
+                          ],
+                        ),
+                        Column(
+                          children: [
+                            Icon(Icons.flag, color: Colors.black54),
+                            Text('Category', style: TextStyle(color: Colors.black54)),
+                            Text(
+                              _currentBibDetails!['category'] ?? 'N/A',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 18.0,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
-                    Text(
-                      'Last Name: ${_currentBibDetails!['last_name']}',
-                      style: TextStyle(fontSize: 18),
+                    SizedBox(height: 16.0),
+                    Container(
+                      decoration: BoxDecoration(
+                        border: Border(bottom: BorderSide(color: Colors.grey)),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceAround,
+                        children: [
+                          TextButton(
+                            onPressed: () {},
+                            child: Text('Overview', style: TextStyle(color: Colors.black)),
+                          ),
+                          TextButton(
+                            onPressed: () {},
+                            child: Text('Split Times', style: TextStyle(color: Colors.black54)),
+                          ),
+                        ],
+                      ),
                     ),
-                    Text(
-                      'Gender: ${_currentBibDetails!['gender']}',
-                      style: TextStyle(fontSize: 18),
+                    SizedBox(height: 16.0),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: [
+                        Column(
+                          children: [
+                            Icon(Icons.access_time, color: Colors.black54),
+                            Text('Start Time', style: TextStyle(color: Colors.black54)),
+                            Text(
+                              _currentBibDetails!['start_time'] ?? '08:00:00',
+                              style: TextStyle(
+                                fontSize: 18.0,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                        Column(
+                          children: [
+                            Icon(Icons.flag, color: Colors.black54),
+                            Text('Finish Time', style: TextStyle(color: Colors.black54)),
+                            Text(
+                              _currentBibDetails!['finish_time'] ?? 'N/A',
+                              style: TextStyle(
+                                fontSize: 18.0,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
-                    Text(
-                      'Date of Birth: ${_currentBibDetails!['date_of_birth']}',
-                      style: TextStyle(fontSize: 18),
-                    ),
-                    Text(
-                      'Address: ${_currentBibDetails!['address']}',
-                      style: TextStyle(fontSize: 18),
-                    ),
-                    Text(
-                      'City: ${_currentBibDetails!['city']}',
-                      style: TextStyle(fontSize: 18),
-                    ),
-                    Text(
-                      'Province: ${_currentBibDetails!['province']}',
-                      style: TextStyle(fontSize: 18),
-                    ),
-                    Text(
-                      'Country: ${_currentBibDetails!['country']}',
-                      style: TextStyle(fontSize: 18),
-                    ),
-                    Text(
-                      'Email: ${_currentBibDetails!['email']}',
-                      style: TextStyle(fontSize: 18),
-                    ),
-                    Text(
-                      'Cellphone: ${_currentBibDetails!['cellphone']}',
-                      style: TextStyle(fontSize: 18),
-                    ),
-                    Text(
-                      'Category: ${_currentBibDetails!['category']}',
-                      style: TextStyle(fontSize: 18),
+                    SizedBox(height: 16.0),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.speed, color: Colors.black54),
+                        SizedBox(width: 8.0),
+                        Text('Pace', style: TextStyle(color: Colors.black54)),
+                        SizedBox(width: 8.0),
+                        Text(
+                          '${_currentBibDetails!['average_pace'] ?? 'N/A'} min/km',
+                          style: TextStyle(
+                            fontSize: 18.0,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -217,8 +281,8 @@ class _BibDetailsPageState extends State<BibDetailsPage> {
       ),
     );
   }
-
-  void _showErrorDialog(String message) {
+  
+    void _showErrorDialog(String message) {
     showDialog(
       context: context,
       builder: (context) {
