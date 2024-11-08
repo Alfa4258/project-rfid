@@ -26,7 +26,7 @@ class _BibDetailsPageState extends State<BibDetailsPage> {
         widget.bibDetails; // Initialize with the passed BIB details
 
     // Navigate back after a 3-second delay
-    Future.delayed(Duration(seconds: 3), () {
+    Future.delayed(Duration(seconds: 10), () {
       Navigator.pop(
           context); // This pops the current page and returns to the previous page
     });
@@ -57,7 +57,7 @@ class _BibDetailsPageState extends State<BibDetailsPage> {
                 child: Center(
                     child: Text(
                   "${_currentBibDetails!['bib_number']}",
-                  style: TextStyle(fontSize: 120),
+                  style: TextStyle(fontSize: 90),
                 )),
               ),
             ),
