@@ -3,6 +3,8 @@ import 'dart:io';
 import 'rfid_check_page.dart';
 import 'display_settings_page.dart';
 import 'race_result_page.dart';
+import 'upload_excel.dart';
+import 'test_rfid.dart';
 
 class HomePage extends StatelessWidget {
   final File? backgroundImage;  // File for the background image
@@ -49,12 +51,24 @@ class HomePage extends StatelessWidget {
                     context,
                     MaterialPageRoute(builder: (context) => RaceResultPage()),
                   );
-              } else if (value == 'Display Settings') {
-                final pickedImage = await Navigator.push(
+              } 
+              else if (value == 'Upload Excel') {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => ExcelUploadPage()),
+                  );
+              }
+              // else if (value == 'Test') {
+              //     Navigator.push(
+              //       context,
+              //       MaterialPageRoute(builder: (context) => RfidPage()),
+              //     );
+              // }
+              else if (value == 'Display Settings') {
+              final pickedImage = await Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) => ChangeBackgroundPage()),
                 );
-
                 if (pickedImage != null) {
                   // Reload HomePage with the selected background image
                   Navigator.pushReplacement(
@@ -88,6 +102,20 @@ class HomePage extends StatelessWidget {
                     title: Text('Race Result'),
                   ),
                 ),
+              PopupMenuItem<String>(
+                  value: 'Upload Excel',
+                  child: ListTile(
+                    leading: Icon(Icons.upload_file),
+                    title: Text('Upload Excel'),
+                ),
+              ),
+              //               PopupMenuItem<String>(
+              //     value: 'Test',
+              //     child: ListTile(
+              //       leading: Icon(Icons.upload_file),
+              //       title: Text('Test'),
+              //   ),
+              // ),
               PopupMenuItem<String>(
                 value: 'Display Settings',
                 child: ListTile(

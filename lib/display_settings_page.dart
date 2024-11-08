@@ -4,6 +4,7 @@ import 'rfid_check_page.dart';
 import 'home_page.dart'; // Make sure to import the HomePage
 import 'race_result_page.dart';
 import 'dart:io';
+import 'upload_excel.dart';
 
 class ChangeBackgroundPage extends StatefulWidget {
   @override
@@ -87,6 +88,11 @@ class ChangeBackgroundPageState extends State<ChangeBackgroundPage> {
                     context,
                     MaterialPageRoute(builder: (context) => RaceResultPage()),
                   );
+                } else if (value == 'Upload Excel') {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => ExcelUploadPage()),
+                  );
                 } else if (value == 'Display Settings') {
                   Navigator.push(
                     context,
@@ -114,6 +120,13 @@ class ChangeBackgroundPageState extends State<ChangeBackgroundPage> {
                   child: ListTile(
                     leading: Icon(Icons.insert_chart_outlined_outlined),
                     title: Text('Race Result'),
+                  ),
+                ),
+                PopupMenuItem<String>(
+                  value: 'Upload Excel',
+                  child: ListTile(
+                    leading: Icon(Icons.upload_file),
+                    title: Text('Upload Excel'),
                   ),
                 ),
                 PopupMenuItem<String>(

@@ -4,6 +4,7 @@ import 'home_page.dart';
 import 'display_settings_page.dart';  
 import 'rfid_check_page.dart'; 
 import 'display_race_result.dart';
+import 'upload_excel.dart';
 
 class RaceResultPage extends StatefulWidget {
   @override
@@ -119,6 +120,11 @@ class _RaceResultPageState extends State<RaceResultPage> {
                     context,
                     MaterialPageRoute(builder: (context) => RaceResultPage()),
                   );
+                }else if (value == 'Upload Excel') {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => ExcelUploadPage()),
+                  );
                 } else if (value == 'Display Settings') {
                   Navigator.push(
                     context,
@@ -146,6 +152,13 @@ class _RaceResultPageState extends State<RaceResultPage> {
                   child: ListTile(
                     leading: Icon(Icons.insert_chart_outlined_outlined),
                     title: Text('Race Result'),
+                  ),
+                ),
+                PopupMenuItem<String>(
+                  value: 'Upload Excel',
+                  child: ListTile(
+                    leading: Icon(Icons.upload_file),
+                    title: Text('Upload Excel'),
                   ),
                 ),
                 PopupMenuItem<String>(
