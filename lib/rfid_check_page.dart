@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'api_service.dart';
@@ -13,13 +14,18 @@ class RFIDTagCheckPage extends StatefulWidget {
 }
 
 class _RFIDTagCheckPageState extends State<RFIDTagCheckPage> {
-  final _bibController = TextEditingController();  
+  final _bibController = TextEditingController();
   final ApiService _apiService = ApiService();
   Socket? _socket;
 
   String connectionStatus = "Belum Terhubung";
   String rfidData = "Menunggu data...";
   String filteredRfidData = "Menunggu data...";
+
+  // Debounce mechanism
+  Timer? _debounceTimer;
+  static const Duration _debounceDuration = Duration(seconds: 1);
+  bool _isProcessing = false;
 
   @override
   void initState() {
@@ -30,16 +36,15 @@ class _RFIDTagCheckPageState extends State<RFIDTagCheckPage> {
   @override
   void dispose() {
     _disconnectSocket();
-    _bibController.dispose(); 
+    _bibController.dispose();
+    _debounceTimer?.cancel();
     super.dispose();
   }
 
-  // Connect to RFID scanner using socket
   Future<void> _connectToRfidScanner() async {
     if (_socket != null) return;
 
     try {
-      // ip dan port yang terhubung ke rfid
       _socket = await Socket.connect('192.168.1.200', 2022);
       _updateConnectionStatus("Terhubung ke RFID scanner");
 
@@ -53,14 +58,12 @@ class _RFIDTagCheckPageState extends State<RFIDTagCheckPage> {
     }
   }
 
-  // Disconnect socket
   void _disconnectSocket([String message = "Koneksi terputus"]) {
     _socket?.destroy();
     _socket = null;
     _updateConnectionStatus(message);
   }
 
-  // Update connection status on UI
   void _updateConnectionStatus(String status) {
     setState(() {
       connectionStatus = status;
@@ -71,9 +74,9 @@ class _RFIDTagCheckPageState extends State<RFIDTagCheckPage> {
     });
   }
 
-  // Handle the data received from socket
   void _handleSocketData(List<int> event) {
-    final hexData = event.map((e) => e.toRadixString(16).padLeft(2, '0')).join(' ');
+    final hexData =
+        event.map((e) => e.toRadixString(16).padLeft(2, '0')).join(' ');
     final extractedData = _extractSpecificData(hexData);
 
     setState(() {
@@ -82,28 +85,47 @@ class _RFIDTagCheckPageState extends State<RFIDTagCheckPage> {
       _bibController.text = extractedData;
     });
 
-    _fetchBibDetails(extractedData);
+    _debouncedFetchBibDetails(extractedData);
   }
 
-  // Extract specific data from hex string
   String _extractSpecificData(String hexData) {
     final dataParts = hexData.split(' ');
-    return "${dataParts[11]}${dataParts[12]}";
+    return "${dataParts[21]}${dataParts[22]}";
+  }
+
+  void _debouncedFetchBibDetails(String bibNumber) {
+    if (_isProcessing) return;
+
+    _debounceTimer?.cancel();
+    _debounceTimer = Timer(_debounceDuration, () {
+      _fetchBibDetails(bibNumber);
+    });
   }
 
   Future<void> _fetchBibDetails(String bibNumber) async {
+    if (_isProcessing) return;
+
+    setState(() {
+      _isProcessing = true;
+    });
+
     try {
       final bibDetails = await _apiService.fetchBibDetails(bibNumber);
       if (bibDetails != null) {
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => BibDetailsPage(bibDetails: bibDetails)),
+          MaterialPageRoute(
+              builder: (context) => BibDetailsPage(bibDetails: bibDetails)),
         );
       } else {
         _showErrorDialog('BIB Number not found');
       }
     } catch (_) {
       _showErrorDialog('Error fetching BIB details');
+    } finally {
+      setState(() {
+        _isProcessing = false;
+      });
     }
   }
 
@@ -113,7 +135,10 @@ class _RFIDTagCheckPageState extends State<RFIDTagCheckPage> {
       builder: (context) => AlertDialog(
         title: Text('Error'),
         content: Text(message),
-        actions: [TextButton(onPressed: () => Navigator.of(context).pop(), child: Text('OK'))],
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.of(context).pop(), child: Text('OK'))
+        ],
       ),
     );
   }
@@ -139,7 +164,10 @@ class _RFIDTagCheckPageState extends State<RFIDTagCheckPage> {
               SizedBox(width: 10),
               Text(
                 'Labsco Sport',
-                style: TextStyle(color: Colors.black, fontSize: 20, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                    color: Colors.black,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold),
               ),
             ],
           ),
@@ -171,22 +199,7 @@ class _RFIDTagCheckPageState extends State<RFIDTagCheckPage> {
               icon: Icon(Icons.search),
               onPressed: () async {
                 String bibNumber = _bibController.text.trim();
-                try {
-                  Map<String, dynamic>? bibDetails = await _apiService.fetchBibDetails(bibNumber);
-
-                  if (bibDetails != null) {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => BibDetailsPage(bibDetails: bibDetails),
-                      ),
-                    );
-                  } else {
-                    _showErrorDialog('BIB Number not found');
-                  }
-                } catch (e) {
-                  _showErrorDialog('Error fetching BIB details');
-                }
+                _fetchBibDetails(bibNumber);
               },
               color: Colors.black,
             ),
@@ -217,24 +230,45 @@ class _RFIDTagCheckPageState extends State<RFIDTagCheckPage> {
                 } else if (value == 'Display Settings') {
                   final pickedImage = await Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => ChangeBackgroundPage()),
+                    MaterialPageRoute(
+                        builder: (context) => ChangeBackgroundPage()),
                   );
                   if (pickedImage != null) {
                     Navigator.pushReplacement(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => HomePage(backgroundImage: pickedImage),
+                        builder: (context) =>
+                            HomePage(backgroundImage: pickedImage),
                       ),
                     );
                   }
                 }
               },
               itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
-                PopupMenuItem<String>(value: 'Home', child: ListTile(leading: Icon(Icons.home), title: Text('Home'))),
-                PopupMenuItem<String>(value: 'RFID Tag Check', child: ListTile(leading: Icon(Icons.info), title: Text('RFID Tag Check'))),
-                PopupMenuItem<String>(value: 'Race Result', child: ListTile(leading: Icon(Icons.insert_chart_outlined), title: Text('Race Result'))),
-                PopupMenuItem<String>(value: 'Upload Excel', child: ListTile(leading: Icon(Icons.upload_file), title: Text('Upload Excel'))),
-                PopupMenuItem<String>(value: 'Display Settings', child: ListTile(leading: Icon(Icons.settings), title: Text('Display Settings'))),
+                PopupMenuItem<String>(
+                    value: 'Home',
+                    child: ListTile(
+                        leading: Icon(Icons.home), title: Text('Home'))),
+                PopupMenuItem<String>(
+                    value: 'RFID Tag Check',
+                    child: ListTile(
+                        leading: Icon(Icons.info),
+                        title: Text('RFID Tag Check'))),
+                PopupMenuItem<String>(
+                    value: 'Race Result',
+                    child: ListTile(
+                        leading: Icon(Icons.insert_chart_outlined),
+                        title: Text('Race Result'))),
+                PopupMenuItem<String>(
+                    value: 'Upload Excel',
+                    child: ListTile(
+                        leading: Icon(Icons.upload_file),
+                        title: Text('Upload Excel'))),
+                PopupMenuItem<String>(
+                    value: 'Display Settings',
+                    child: ListTile(
+                        leading: Icon(Icons.settings),
+                        title: Text('Display Settings'))),
               ],
             ),
           ],
@@ -249,7 +283,9 @@ class _RFIDTagCheckPageState extends State<RFIDTagCheckPage> {
                 connectionStatus,
                 style: TextStyle(
                   fontSize: 18,
-                  color: connectionStatus == "Terhubung ke RFID scanner" ? Colors.green : Colors.red,
+                  color: connectionStatus == "Terhubung ke RFID scanner"
+                      ? Colors.green
+                      : Colors.red,
                 ),
               ),
               SizedBox(height: 20),
