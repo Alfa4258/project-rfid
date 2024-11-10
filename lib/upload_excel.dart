@@ -17,7 +17,6 @@ class _ExcelUploadPageState extends State<ExcelUploadPage> {
   bool _isUploading = false;
   String _uploadStatus = '';
 
-  // Function to pick an Excel file
   Future<void> _pickFile() async {
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
@@ -35,7 +34,6 @@ class _ExcelUploadPageState extends State<ExcelUploadPage> {
     }
   }
 
-  // Function to upload the selected file to the API
   Future<void> _uploadFile() async {
     if (_selectedFile == null) return;
 
@@ -43,12 +41,12 @@ class _ExcelUploadPageState extends State<ExcelUploadPage> {
       _isUploading = true;
       _uploadStatus = 'Uploading...';
     });
-    
+
     var uri = Uri.parse('http://127.0.0.1:8000/api/upload-db');
     var request = http.MultipartRequest('POST', uri);
 
-    // Attach the file
-    request.files.add(await http.MultipartFile.fromPath('file', _selectedFile!.path));
+    request.files
+        .add(await http.MultipartFile.fromPath('file', _selectedFile!.path));
 
     try {
       var response = await request.send();
@@ -58,7 +56,8 @@ class _ExcelUploadPageState extends State<ExcelUploadPage> {
         });
       } else {
         setState(() {
-          _uploadStatus = 'File upload failed with status: ${response.statusCode}';
+          _uploadStatus =
+              'File upload failed with status: ${response.statusCode}';
         });
       }
     } catch (e) {
@@ -72,14 +71,13 @@ class _ExcelUploadPageState extends State<ExcelUploadPage> {
     }
   }
 
-  // Function to navigate to HomePage when back button is pressed
   Future<bool> _onWillPop() async {
     Navigator.pushAndRemoveUntil(
       context,
       MaterialPageRoute(builder: (context) => HomePage()),
       (route) => false,
     );
-    return false;  // Prevents the default back navigation
+    return false;
   }
 
   @override
@@ -94,7 +92,7 @@ class _ExcelUploadPageState extends State<ExcelUploadPage> {
           title: Row(
             children: [
               Image.asset(
-                'assets/logo.png',  // Replace with your logo asset
+                'assets/logo.png',
                 height: 40,
               ),
               SizedBox(width: 10),
@@ -134,18 +132,11 @@ class _ExcelUploadPageState extends State<ExcelUploadPage> {
                     MaterialPageRoute(builder: (context) => ExcelUploadPage()),
                   );
                 } else if (value == 'Display Settings') {
-                  final pickedImage = await Navigator.push(
+                  Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => ChangeBackgroundPage()),
+                    MaterialPageRoute(
+                        builder: (context) => ChangeBackgroundPage()),
                   );
-                  if (pickedImage != null) {
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => HomePage(backgroundImage: pickedImage),
-                      ),
-                    );
-                  }
                 }
               },
               itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
@@ -211,7 +202,7 @@ class _ExcelUploadPageState extends State<ExcelUploadPage> {
                   child: Text('Choose Excel File'),
                 ),
                 SizedBox(height: 10),
-                if (_selectedFile != null) 
+                if (_selectedFile != null)
                   Text(
                     'Selected file: ${_selectedFile!.path.split('/').last}',
                     style: TextStyle(fontSize: 16),
@@ -219,8 +210,8 @@ class _ExcelUploadPageState extends State<ExcelUploadPage> {
                 SizedBox(height: 20),
                 ElevatedButton(
                   onPressed: _isUploading ? null : _uploadFile,
-                  child: _isUploading 
-                      ? CircularProgressIndicator() 
+                  child: _isUploading
+                      ? CircularProgressIndicator()
                       : Text('Upload File'),
                 ),
                 SizedBox(height: 20),

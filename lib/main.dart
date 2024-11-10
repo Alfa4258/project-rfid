@@ -1,9 +1,16 @@
 import 'package:flutter/material.dart';
-import 'dart:async'; // For the Timer function
-import 'home_page.dart'; // Import the main page
+import 'dart:async';
+import 'package:provider/provider.dart';
+import 'home_page.dart';
+import 'background_provider.dart';
 
 void main() {
-  runApp(MyApp());
+  runApp(
+    ChangeNotifierProvider(
+      create: (context) => BackgroundProvider(),
+      child: MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
@@ -15,7 +22,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: SplashScreen(), // Splash screen as the initial page
+      home: SplashScreen(),
     );
   }
 }
@@ -30,11 +37,10 @@ class _SplashScreenState extends State<SplashScreen> {
   void initState() {
     super.initState();
 
-    // Show the splash screen for 3 seconds
     Timer(Duration(seconds: 3), () {
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
-          builder: (context) => HomePage(), // Redirect to your main page
+          builder: (context) => HomePage(),
         ),
       );
     });
@@ -46,14 +52,13 @@ class _SplashScreenState extends State<SplashScreen> {
       body: Container(
         decoration: BoxDecoration(
           image: DecorationImage(
-            image: AssetImage('assets/regulus.png'), // Your logo image
-            fit: BoxFit.cover, // Make the image cover the entire screen
+            image: AssetImage('assets/regulus.png'),
+            fit: BoxFit.cover,
           ),
         ),
         child: Center(
-          // You can place any widgets here, e.g., a loading indicator
           child: CircularProgressIndicator(
-            color: Colors.white, // Optional: change the color of the loading indicator
+            color: Colors.white,
           ),
         ),
       ),
