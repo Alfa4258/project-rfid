@@ -3,8 +3,7 @@ import 'package:provider/provider.dart';
 import 'dart:io';
 import 'api_service.dart';
 import 'home_page.dart';
-import 'rfid_check_page.dart';
-import 'display_settings_page.dart';
+
 import 'background_provider.dart';
 
 class BibDetailsPage extends StatefulWidget {
