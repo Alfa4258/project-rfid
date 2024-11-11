@@ -1,27 +1,27 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'dart:io';
 import 'rfid_check_page.dart';
 import 'display_settings_page.dart';
 import 'race_result_page.dart';
 import 'upload_excel.dart';
-import 'test_rfid.dart';
+import 'background_provider.dart';
 
 class HomePage extends StatelessWidget {
-  final File? backgroundImage;  // File for the background image
-
-  HomePage({this.backgroundImage});  // Constructor accepts the background image
-
   @override
   Widget build(BuildContext context) {
+    final backgroundProvider = Provider.of<BackgroundProvider>(context);
+    final File? backgroundImage = backgroundProvider.homeBannerImage;
+
     return Scaffold(
-      backgroundColor: Color(0xFFCDC4C4),  // Default background color
+      backgroundColor: Color(0xFFCDC4C4),
       appBar: AppBar(
         backgroundColor: Colors.grey[200],
-        elevation: 0,  // Flat look for the AppBar
+        elevation: 0,
         title: Row(
           children: [
             Image.asset(
-              'assets/logo.png',  // Replace with your logo asset
+              'assets/logo.png',
               height: 40,
             ),
             SizedBox(width: 10),
@@ -40,44 +40,28 @@ class HomePage extends StatelessWidget {
             icon: Icon(Icons.menu, color: Colors.black),
             onSelected: (value) async {
               if (value == 'Home') {
-                Navigator.popUntil(context, (route) => route.isFirst);  // Navigate to the home screen
+                Navigator.popUntil(context, (route) => route.isFirst);
               } else if (value == 'RFID Tag Check') {
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) => RFIDTagCheckPage()),
                 );
               } else if (value == 'Race Result') {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => RaceResultPage()),
-                  );
-              } 
-              else if (value == 'Upload Excel') {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => ExcelUploadPage()),
-                  );
-              }
-              // else if (value == 'Test') {
-              //     Navigator.push(
-              //       context,
-              //       MaterialPageRoute(builder: (context) => RfidPage()),
-              //     );
-              // }
-              else if (value == 'Display Settings') {
-              final pickedImage = await Navigator.push(
+                Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => ChangeBackgroundPage()),
+                  MaterialPageRoute(builder: (context) => RaceResultPage()),
                 );
-                if (pickedImage != null) {
-                  // Reload HomePage with the selected background image
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => HomePage(backgroundImage: pickedImage),
-                    ),
-                  );
-                }
+              } else if (value == 'Upload Excel') {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => ExcelUploadPage()),
+                );
+              } else if (value == 'Display Settings') {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => ChangeBackgroundPage()),
+                );
               }
             },
             itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
@@ -96,26 +80,19 @@ class HomePage extends StatelessWidget {
                 ),
               ),
               PopupMenuItem<String>(
-                  value: 'Race Result',
-                  child: ListTile(
-                    leading: Icon(Icons.insert_chart_outlined_outlined),
-                    title: Text('Race Result'),
-                  ),
-                ),
-              PopupMenuItem<String>(
-                  value: 'Upload Excel',
-                  child: ListTile(
-                    leading: Icon(Icons.upload_file),
-                    title: Text('Upload Excel'),
+                value: 'Race Result',
+                child: ListTile(
+                  leading: Icon(Icons.insert_chart_outlined_outlined),
+                  title: Text('Race Result'),
                 ),
               ),
-              //               PopupMenuItem<String>(
-              //     value: 'Test',
-              //     child: ListTile(
-              //       leading: Icon(Icons.upload_file),
-              //       title: Text('Test'),
-              //   ),
-              // ),
+              PopupMenuItem<String>(
+                value: 'Upload Excel',
+                child: ListTile(
+                  leading: Icon(Icons.upload_file),
+                  title: Text('Upload Excel'),
+                ),
+              ),
               PopupMenuItem<String>(
                 value: 'Display Settings',
                 child: ListTile(
@@ -130,21 +107,21 @@ class HomePage extends StatelessWidget {
       body: Center(
         child: Container(
           margin: EdgeInsets.all(20),
-          height: 900,  // Fixed height for the container
-          width: MediaQuery.of(context).size.width * 1.5,  // Width set to 80% of screen width
+          height: 900,
+          width: MediaQuery.of(context).size.width * 1.5,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(10),
-            // Show the background image if it's provided, otherwise fallback to default background color
-            image: backgroundImage != null 
+            image: backgroundImage != null
                 ? DecorationImage(
-                    image: FileImage(backgroundImage!),
-                    fit: BoxFit.cover,  // Fit image to cover the container
+                    image: FileImage(backgroundImage),
+                    fit: BoxFit.cover,
                   )
                 : null,
-            color: backgroundImage == null ? Colors.grey[300] : Colors.transparent,
+            color:
+                backgroundImage == null ? Colors.grey[300] : Colors.transparent,
           ),
-          child: backgroundImage == null 
-              ? Center(  // Default message when no background image is set
+          child: backgroundImage == null
+              ? Center(
                   child: Text(
                     'No Background Available',
                     style: TextStyle(fontSize: 20, color: Colors.black),

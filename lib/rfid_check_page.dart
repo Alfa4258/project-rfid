@@ -4,9 +4,9 @@ import 'package:flutter/material.dart';
 import 'api_service.dart';
 import 'display_bib.dart';
 import 'home_page.dart';
-import 'display_settings_page.dart';
 import 'race_result_page.dart';
 import 'upload_excel.dart';
+import 'display_settings_page.dart';
 
 class RFIDTagCheckPage extends StatefulWidget {
   @override
@@ -22,7 +22,6 @@ class _RFIDTagCheckPageState extends State<RFIDTagCheckPage> {
   String rfidData = "Menunggu data...";
   String filteredRfidData = "Menunggu data...";
 
-  // Debounce mechanism
   Timer? _debounceTimer;
   static const Duration _debounceDuration = Duration(seconds: 1);
   bool _isProcessing = false;
@@ -197,7 +196,7 @@ class _RFIDTagCheckPageState extends State<RFIDTagCheckPage> {
             ),
             IconButton(
               icon: Icon(Icons.search),
-              onPressed: () async {
+              onPressed: () {
                 String bibNumber = _bibController.text.trim();
                 _fetchBibDetails(bibNumber);
               },
@@ -228,20 +227,11 @@ class _RFIDTagCheckPageState extends State<RFIDTagCheckPage> {
                     MaterialPageRoute(builder: (context) => ExcelUploadPage()),
                   );
                 } else if (value == 'Display Settings') {
-                  final pickedImage = await Navigator.push(
+                  Navigator.push(
                     context,
                     MaterialPageRoute(
                         builder: (context) => ChangeBackgroundPage()),
                   );
-                  if (pickedImage != null) {
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) =>
-                            HomePage(backgroundImage: pickedImage),
-                      ),
-                    );
-                  }
                 }
               },
               itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[

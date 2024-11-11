@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
-import 'api_service.dart'; // Import ApiService for searching BIBs again
-import 'home_page.dart'; // Import HomePage for back navigation
-import 'rfid_check_page.dart'; // Import RFIDTagCheckPage
-import 'display_settings_page.dart'; // Import ChangeBackgroundPage
+import 'package:provider/provider.dart';
+import 'dart:io';
+import 'api_service.dart';
+import 'home_page.dart';
+
+import 'background_provider.dart';
 
 class BibDetailsPage extends StatefulWidget {
   final Map<String, dynamic> bibDetails;
-  final ApiService apiService = ApiService(); // Initialize ApiService
+  final ApiService apiService = ApiService();
 
   BibDetailsPage({required this.bibDetails});
 
@@ -15,90 +17,110 @@ class BibDetailsPage extends StatefulWidget {
 }
 
 class _BibDetailsPageState extends State<BibDetailsPage> {
-  final TextEditingController _bibController =
-      TextEditingController(); // Controller for the search bar
+  final TextEditingController _bibController = TextEditingController();
   Map<String, dynamic>? _currentBibDetails;
 
   @override
   void initState() {
     super.initState();
-    _currentBibDetails =
-        widget.bibDetails; // Initialize with the passed BIB details
+    _currentBibDetails = widget.bibDetails;
 
-    // Navigate back after a 3-second delay
     Future.delayed(Duration(seconds: 10), () {
-      Navigator.pop(
-          context); // This pops the current page and returns to the previous page
+      if (mounted) {
+        Navigator.pop(context);
+      }
     });
   }
 
   @override
   Widget build(BuildContext context) {
+    final backgroundProvider = Provider.of<BackgroundProvider>(context);
+    final File? backgroundImage = backgroundProvider.bibDisplayBackgroundImage;
+
     return WillPopScope(
       onWillPop: () async {
-        // Navigate to HomePage when the back button is pressed
         Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(builder: (context) => HomePage()),
-          (route) => false, // Remove all previous routes
+          (route) => false,
         );
-        return false; // Prevent default back navigation
+        return false;
       },
       child: Scaffold(
-        backgroundColor: Color(0xFFCDC4C4),
-        body: Column(
-          children: [
-            // Top Section (takes up half the screen height)
-            Expanded(
-              flex: 2,
-              child: Container(
-                color: Colors.grey[
-                    200], // Change to whatever you want for the top section
-                child: Center(
+        body: Container(
+          decoration: BoxDecoration(
+            image: backgroundImage != null
+                ? DecorationImage(
+                    image: FileImage(backgroundImage),
+                    fit: BoxFit.cover,
+                  )
+                : null,
+          ),
+          child: Column(
+            children: [
+              Expanded(
+                flex: 2,
+                child: Container(
+                  color: Colors.grey[200]?.withOpacity(0.7),
+                  child: Center(
                     child: Text(
-                  "${_currentBibDetails!['bib_number']}",
-                  style: TextStyle(fontSize: 90),
-                )),
+                      "${_currentBibDetails!['bib_number']}",
+                      style:
+                          TextStyle(fontSize: 90, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ),
               ),
-            ),
-            // Middle Section (smaller height section between top and bottom)
-            // Bottom two sections (Left and Right side by side)
-            Expanded(
-              flex: 1,
-              child: Row(
-                children: [
-                  // Bottom Left Section
-                  Expanded(
-                    flex: 1,
-                    child: Container(
-                      color: Colors.grey[400], // Change to suit
-                      child: Center(
+              Expanded(
+                flex: 1,
+                child: Row(
+                  children: [
+                    Expanded(
+                      flex: 1,
+                      child: Container(
+                        color: Colors.grey[400]?.withOpacity(0.7),
+                        child: Center(
                           child: Text(
-                              "${_currentBibDetails!['first_name']} ${_currentBibDetails!['last_name']}",
-                              style: TextStyle(fontSize: 60))),
+                            "${_currentBibDetails!['first_name']} ${_currentBibDetails!['last_name']}",
+                            style: TextStyle(
+                                fontSize: 60, fontWeight: FontWeight.bold),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      flex: 1,
+                      child: Container(
+                        color: Colors.grey[500]?.withOpacity(0.7),
+                        child: Center(
+                          child: Text(
+                            "${_currentBibDetails!['category']} Race",
+                            style: TextStyle(
+                                fontSize: 60, fontWeight: FontWeight.bold),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                flex: 1,
+                child: Container(
+                  color: Colors.grey[300]?.withOpacity(0.7),
+                  child: Center(
+                    child: Text(
+                      "Sponsor Logo Section",
+                      style:
+                          TextStyle(fontSize: 40, fontWeight: FontWeight.bold),
                     ),
                   ),
-                  // Bottom Right Section
-                  Expanded(
-                    flex: 1,
-                    child: Container(
-                      color: Colors.grey[500], // Change to suit
-                      child: Center(
-                          child: Text("${_currentBibDetails!['category']} Race",
-                              style: TextStyle(fontSize: 60))),
-                    ),
-                  ),
-                ],
+                ),
               ),
-            ),
-            Expanded(
-              flex: 1,
-              child: Container(
-                color: Colors.grey[300], // Change color to suit
-                child: Center(child: Text("sponsor logo Section")),
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
