@@ -6,10 +6,10 @@ import 'display_settings_page.dart';
 import 'race_result_page.dart';
 
 class RaceResultsDetailsPage extends StatefulWidget {
-  final Map<String, dynamic> RaceResultsDetails;
+  final Map<String, dynamic> raceResultsDetails;
   final ApiService apiService = ApiService();
 
-  RaceResultsDetailsPage({required this.RaceResultsDetails});
+  RaceResultsDetailsPage({required this.raceResultsDetails});
 
   @override
   _RaceResultsDetailsPageState createState() => _RaceResultsDetailsPageState();
@@ -23,7 +23,7 @@ class _RaceResultsDetailsPageState extends State<RaceResultsDetailsPage> {
   @override
   void initState() {
     super.initState();
-    _currentBibDetails = widget.RaceResultsDetails;
+    _currentBibDetails = widget.raceResultsDetails;
   }
 
   @override
@@ -41,17 +41,42 @@ class _RaceResultsDetailsPageState extends State<RaceResultsDetailsPage> {
         backgroundColor: Color(0xFFE5E5E5),
         appBar: _buildAppBar(),
         body: _currentBibDetails != null
-            ? SingleChildScrollView(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    _buildBibHeader(),
-                    _buildMainInfo(),
-                    _buildTabs(),
-                    _buildTimeInfo(),
-                    _buildPaceInfo(),
-                  ],
-                ),
+            ? LayoutBuilder(
+                builder: (context, constraints) {
+                  return SingleChildScrollView(
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                      child: IntrinsicHeight(
+                        child: Column(
+                          children: [
+                            _buildBibHeader(),
+                            Expanded(
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  Expanded(
+                                    flex: 2,
+                                    child: Column(
+                                      children: [
+                                        _buildMainInfo(),
+                                        _buildTabs(),
+                                        _buildTimeInfo(),
+                                      ],
+                                    ),
+                                  ),
+                                  Expanded(
+                                    flex: 1,
+                                    child: _buildPaceInfo(),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                },
               )
             : Center(child: CircularProgressIndicator()),
       ),
@@ -131,39 +156,46 @@ class _RaceResultsDetailsPageState extends State<RaceResultsDetailsPage> {
   }
 
   Widget _buildMainInfo() {
-    return Container(
-      margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      padding: EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: Offset(0, 4),
-          ),
-        ],
-      ),
-      child: IntrinsicHeight(  // Add this wrapper
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            _buildInfoColumn(
-              Icons.person,
-              'Name',
-              '${_currentBibDetails!['first_name']} ${_currentBibDetails!['last_name']}',
-            ),
-            VerticalDivider(  // Replace Container with VerticalDivider
-              color: Colors.grey[300],
-              thickness: 1,
-            ),
-            _buildInfoColumn(
-              Icons.flag,
-              'Category',
-              _currentBibDetails!['category'] ?? 'N/A',
+    return Expanded(
+      child: Container(
+        margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        padding: EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: Offset(0, 4),
             ),
           ],
+        ),
+        child: IntrinsicHeight(
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                child: _buildInfoColumn(
+                  Icons.person,
+                  'Name',
+                  '${_currentBibDetails!['first_name']} ${_currentBibDetails!['last_name']}',
+                ),
+              ),
+              VerticalDivider(
+                color: Colors.grey[300],
+                thickness: 1,
+              ),
+              Expanded(
+                child: _buildInfoColumn(
+                  Icons.flag,
+                  'Category',
+                  _currentBibDetails!['category'] ?? 'N/A',
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -171,8 +203,9 @@ class _RaceResultsDetailsPageState extends State<RaceResultsDetailsPage> {
 
   Widget _buildInfoColumn(IconData icon, String label, String value) {
     return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Icon(icon, size: 32, color: Colors.blue[700]),
+        Icon(icon, size: 32, color: const Color.fromARGB(255, 0, 0, 0)),
         SizedBox(height: 8),
         Text(
           label,
@@ -236,7 +269,7 @@ class _RaceResultsDetailsPageState extends State<RaceResultsDetailsPage> {
           decoration: BoxDecoration(
             border: Border(
               bottom: BorderSide(
-                color: isSelected ? Colors.blue[700]! : Colors.transparent,
+                color: isSelected ? const Color.fromARGB(255, 0, 0, 0) : Colors.transparent,
                 width: 3,
               ),
             ),
@@ -244,7 +277,7 @@ class _RaceResultsDetailsPageState extends State<RaceResultsDetailsPage> {
           child: Text(
             text,
             style: TextStyle(
-              color: isSelected ? Colors.blue[700] : Colors.grey[600],
+              color: isSelected ? const Color.fromARGB(255, 0, 0, 0) : Colors.grey[600],
               fontSize: 18,
               fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
             ),
@@ -256,43 +289,47 @@ class _RaceResultsDetailsPageState extends State<RaceResultsDetailsPage> {
   }
 
   Widget _buildTimeInfo() {
-    return Container(
-      margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      padding: EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          _buildTimeColumn(
-            Icons.play_circle,
-            'Start Time',
-            _currentBibDetails!['start_time'] ?? '08:00:00',
-          ),
-          Container(height: 80, width: 1, color: Colors.grey[300]),
-          _buildTimeColumn(
-            Icons.stop_circle,
-            'Finish Time',
-            _currentBibDetails!['finish_time'] ?? 'N/A',
-          ),
-        ],
+    return Expanded(
+      child: Container(
+        margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        padding: EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            _buildTimeColumn(
+              Icons.play_circle,
+              'Start Time',
+              _currentBibDetails!['start_time'] ?? '08:00:00',
+            ),
+            Container(height: 80, width: 1, color: Colors.grey[300]),
+            _buildTimeColumn(
+              Icons.stop_circle,
+              'Finish Time',
+              _currentBibDetails!['finish_time'] ?? 'N/A',
+            ),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildTimeColumn(IconData icon, String label, String time) {
     return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Icon(icon, size: 32, color: Colors.blue[700]),
+        Icon(icon, size: 32, color: const Color.fromARGB(255, 0, 0, 0)),
         SizedBox(height: 8),
         Text(
           label,
@@ -316,7 +353,7 @@ class _RaceResultsDetailsPageState extends State<RaceResultsDetailsPage> {
 
   Widget _buildPaceInfo() {
     return Container(
-      margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      margin: EdgeInsets.all(16),
       padding: EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -330,8 +367,9 @@ class _RaceResultsDetailsPageState extends State<RaceResultsDetailsPage> {
         ],
       ),
       child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.speed, size: 32, color: Colors.blue[700]),
+          Icon(Icons.speed, size: 32, color: const Color.fromARGB(255, 0, 0, 0)),
           SizedBox(height: 8),
           Text(
             'Pace',

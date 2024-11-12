@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'api_service.dart';  
 import 'home_page.dart';   
@@ -13,19 +15,129 @@ class RaceResultPage extends StatefulWidget {
 
 class _RaceResultPageState extends State<RaceResultPage> {
   final TextEditingController _bibController = TextEditingController();
-  final ApiService apiService = ApiService(); // Create an instance of ApiService
+  final ApiService _apiService = ApiService(); 
+  Socket? _socket;
+
+  String connectionStatus = "Belum Terhubung";
+  String rfidData = "Menunggu data...";
+  String filteredRfidData = "Menunggu data...";
+
+  Timer? _debounceTimer;
+  static const Duration _debounceDuration = Duration(seconds: 1);
+  bool _isProcessing = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _connectToRfidScanner();
+  }
+
+  @override
+  void dispose() {
+    _disconnectSocket();
+    _bibController.dispose();
+    _debounceTimer?.cancel();
+    super.dispose();
+  }
+
+    Future<void> _connectToRfidScanner() async {
+    if (_socket != null) return;
+
+    try {
+      _socket = await Socket.connect('192.168.1.200', 2022);
+      _updateConnectionStatus("Terhubung ke RFID scanner");
+
+      _socket!.listen(
+        _handleSocketData,
+        onDone: () => _disconnectSocket("Koneksi ditutup oleh server."),
+        onError: (error) => _disconnectSocket("Error: $error"),
+      );
+    } catch (e) {
+      _updateConnectionStatus("Koneksi gagal: $e");
+    }
+  }
+
+    void _disconnectSocket([String message = "Koneksi terputus"]) {
+    _socket?.destroy();
+    _socket = null;
+    _updateConnectionStatus(message);
+  }
+
+  void _updateConnectionStatus(String status) {
+    setState(() {
+      connectionStatus = status;
+      if (status != "Terhubung ke RFID scanner") {
+        rfidData = "Menunggu data...";
+        filteredRfidData = "Menunggu data...";
+      }
+    });
+  }
+
+  void _handleSocketData(List<int> event) {
+    final hexData =
+        event.map((e) => e.toRadixString(16).padLeft(2, '0')).join(' ');
+    final extractedData = _extractSpecificData(hexData);
+
+    setState(() {
+      rfidData = hexData;
+      filteredRfidData = extractedData;
+      _bibController.text = extractedData;
+    });
+
+    _debouncedFetchBibDetails(extractedData);
+  }
+
+  String _extractSpecificData(String hexData) {
+    final dataParts = hexData.split(' ');
+    return "${dataParts[21]}${dataParts[22]}";
+  }
+
+  void _debouncedFetchBibDetails(String bibNumber) {
+    if (_isProcessing) return;
+
+    _debounceTimer?.cancel();
+    _debounceTimer = Timer(_debounceDuration, () {
+      _fetchBibDetails(bibNumber);
+    });
+  }
+
+  Future<void> _fetchBibDetails(String bibNumber) async {
+    if (_isProcessing) return;
+
+    setState(() {
+      _isProcessing = true;
+    });
+
+    try {
+      final bibDetails = await _apiService.fetchBibDetails(bibNumber);
+      if (bibDetails != null) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+              builder: (context) => RaceResultsDetailsPage(raceResultsDetails: bibDetails)),
+        );
+      } else {
+        _showErrorDialog('BIB Number not found');
+      }
+    } catch (_) {
+      _showErrorDialog('Error fetching BIB details');
+    } finally {
+      setState(() {
+        _isProcessing = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return WillPopScope(
       onWillPop: () async {
-        // Navigate to HomePage when the back button is pressed
         Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(builder: (context) => HomePage()),
-          (route) => false, // Remove all previous routes
+          (route) => false, 
         );
-        return false; // Prevent default back navigation
+        return false; 
       },
       child: Scaffold(
         backgroundColor: Color(0xFFCDC4C4),
@@ -76,28 +188,7 @@ class _RaceResultPageState extends State<RaceResultPage> {
               icon: Icon(Icons.search),
               onPressed: () async {
                 String bibNumber = _bibController.text.trim();
-
-                try {
-                  // Fetch BIB details from the API
-                  Map<String, dynamic>? bibDetails = await apiService.fetchBibDetails(bibNumber);
-
-                  if (bibDetails != null) {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => RaceResultsDetailsPage(
-                          RaceResultsDetails: bibDetails,
-                        ),
-                      ),
-                    );
-                  } else {
-                    // Show a dialog if BIB number is not found
-                    _showErrorDialog('BIB Number not found');
-                  }
-                } catch (e) {
-                  // Handle any errors here
-                  _showErrorDialog('Error fetching BIB details');
-                }
+                _fetchBibDetails(bibNumber);
               },
               color: Colors.black,
             ),
@@ -176,19 +267,26 @@ class _RaceResultPageState extends State<RaceResultPage> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
-                Icons.wifi_tethering,
-                size: 100,
-                color: Colors.black54,
+              Icon(Icons.wifi_tethering, size: 100, color: Colors.black54,),
+              SizedBox(height: 20),
+              Text(
+                connectionStatus,
+                style: TextStyle(
+                  fontSize: 18,
+                  color: connectionStatus == "Terhubung ke RFID scanner"
+                      ? Colors.green
+                      : Colors.red,
+                ),
               ),
               SizedBox(height: 20),
               Text(
-                'Scan RFID Tag or Enter BIB Number',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black,
-                ),
+                'Data RFID (Hex): $rfidData',
+                style: TextStyle(fontSize: 16, color: Colors.black),
+              ),
+              SizedBox(height: 10),
+              Text(
+                'Filtered Data: $filteredRfidData',
+                style: TextStyle(fontSize: 16, color: Colors.black),
               ),
             ],
           ),
