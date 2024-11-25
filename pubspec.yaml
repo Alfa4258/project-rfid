@@ -17,6 +17,8 @@ dependencies:
   flutter_native_splash: ^2.2.20
   file_picker: ^5.0.0
   http: ^1.2.2
+  serial_communication: ^0.0.2
+  flutter_libserialport: ^0.4.0
 
 dev_dependencies:
   flutter_test:
