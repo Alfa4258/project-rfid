@@ -15,7 +15,7 @@ class ChangeBackgroundPage extends StatefulWidget {
 
 class ChangeBackgroundPageState extends State<ChangeBackgroundPage> {
   File? _homeBannerImage;
-  File? _bibDisplayBackgroundImage;
+  File? _displayBackgroundImage;
 
   Future<void> _pickImage(bool isHomeBanner) async {
     FilePickerResult? result = await FilePicker.platform.pickFiles(
@@ -27,7 +27,7 @@ class ChangeBackgroundPageState extends State<ChangeBackgroundPage> {
         if (isHomeBanner) {
           _homeBannerImage = File(result.files.single.path!);
         } else {
-          _bibDisplayBackgroundImage = File(result.files.single.path!);
+          _displayBackgroundImage = File(result.files.single.path!);
         }
       });
     }
@@ -38,8 +38,8 @@ class ChangeBackgroundPageState extends State<ChangeBackgroundPage> {
     if (_homeBannerImage != null) {
       provider.setHomeBannerImage(_homeBannerImage);
     }
-    if (_bibDisplayBackgroundImage != null) {
-      provider.setBibDisplayBackgroundImage(_bibDisplayBackgroundImage);
+    if (_displayBackgroundImage != null) {
+      provider.setDisplayBackgroundImage(_displayBackgroundImage);
     }
 
     Navigator.pushAndRemoveUntil(
@@ -53,7 +53,7 @@ class ChangeBackgroundPageState extends State<ChangeBackgroundPage> {
   Widget build(BuildContext context) {
     final provider = Provider.of<BackgroundProvider>(context);
     _homeBannerImage ??= provider.homeBannerImage;
-    _bibDisplayBackgroundImage ??= provider.bibDisplayBackgroundImage;
+    _displayBackgroundImage ??= provider.displayBackgroundImage;
 
     return WillPopScope(
       onWillPop: () async {
@@ -186,16 +186,16 @@ class ChangeBackgroundPageState extends State<ChangeBackgroundPage> {
                 ),
                 SizedBox(height: 40),
                 Text(
-                  'Bib Display Background Image',
+                  'Display Background Image',
                   style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                 ),
                 SizedBox(height: 10),
-                if (_bibDisplayBackgroundImage != null)
+                if (_displayBackgroundImage != null)
                   Container(
                     height: 200,
                     decoration: BoxDecoration(
                       image: DecorationImage(
-                        image: FileImage(_bibDisplayBackgroundImage!),
+                        image: FileImage(_displayBackgroundImage!),
                         fit: BoxFit.cover,
                       ),
                       borderRadius: BorderRadius.circular(10),
@@ -210,7 +210,7 @@ class ChangeBackgroundPageState extends State<ChangeBackgroundPage> {
                     ),
                     child: Center(
                       child: Text(
-                        'No bib display background selected',
+                        'No display background selected',
                         style: TextStyle(fontSize: 16, color: Colors.black54),
                       ),
                     ),
@@ -218,7 +218,7 @@ class ChangeBackgroundPageState extends State<ChangeBackgroundPage> {
                 SizedBox(height: 10),
                 ElevatedButton(
                   onPressed: () => _pickImage(false),
-                  child: Text('Pick Bib Display Background Image'),
+                  child: Text('Pick Display Background Image'),
                 ),
                 SizedBox(height: 40),
                 ElevatedButton(

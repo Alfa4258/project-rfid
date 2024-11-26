@@ -3,18 +3,18 @@ import 'package:flutter/foundation.dart';
 
 class BackgroundProvider extends ChangeNotifier {
   File? _homeBannerImage;
-  File? _bibDisplayBackgroundImage;
+  File? _displayBackgroundImage;
 
   File? get homeBannerImage => _homeBannerImage;
-  File? get bibDisplayBackgroundImage => _bibDisplayBackgroundImage;
+  File? get displayBackgroundImage => _displayBackgroundImage;
 
   void setHomeBannerImage(File? image) {
     _homeBannerImage = image;
     notifyListeners();
   }
 
-  void setBibDisplayBackgroundImage(File? image) {
-    _bibDisplayBackgroundImage = image;
+  void setDisplayBackgroundImage(File? image) {
+    _displayBackgroundImage = image;
     notifyListeners();
   }
 }
