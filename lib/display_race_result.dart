@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'dart:io';
 import 'api_service.dart';
 import 'home_page.dart';
 import 'rfid_check_page.dart';
 import 'display_settings_page.dart';
 import 'race_result_page.dart';
+import 'background_provider.dart';
 
 class RaceResultsDetailsPage extends StatefulWidget {
   final Map<String, dynamic> raceResultsDetails;
@@ -28,6 +31,9 @@ class _RaceResultsDetailsPageState extends State<RaceResultsDetailsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final backgroundProvider = Provider.of<BackgroundProvider>(context);
+    final File? backgroundImage = backgroundProvider.displayBackgroundImage;
+
     return WillPopScope(
       onWillPop: () async {
         Navigator.pushAndRemoveUntil(
@@ -40,45 +46,55 @@ class _RaceResultsDetailsPageState extends State<RaceResultsDetailsPage> {
       child: Scaffold(
         backgroundColor: Color(0xFFE5E5E5),
         appBar: _buildAppBar(),
-        body: _currentBibDetails != null
-            ? LayoutBuilder(
-                builder: (context, constraints) {
-                  return SingleChildScrollView(
-                    child: ConstrainedBox(
-                      constraints: BoxConstraints(minHeight: constraints.maxHeight),
-                      child: IntrinsicHeight(
-                        child: Column(
-                          children: [
-                            _buildBibHeader(),
-                            Expanded(
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                children: [
-                                  Expanded(
-                                    flex: 2,
-                                    child: Column(
-                                      children: [
-                                        _buildMainInfo(),
-                                        _buildTabs(),
-                                        _buildTimeInfo(),
-                                      ],
+        body: Container(
+          decoration: BoxDecoration(
+            image: backgroundImage != null
+                ? DecorationImage(
+                    image: FileImage(backgroundImage),
+                    fit: BoxFit.cover,
+                  )
+                : null,
+          ),
+          child: _currentBibDetails != null
+              ? LayoutBuilder(
+                  builder: (context, constraints) {
+                    return SingleChildScrollView(
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                        child: IntrinsicHeight(
+                          child: Column(
+                            children: [
+                              _buildBibHeader(),
+                              Expanded(
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                                  children: [
+                                    Expanded(
+                                      flex: 2,
+                                      child: Column(
+                                        children: [
+                                          _buildMainInfo(),
+                                          _buildTabs(),
+                                          _buildTimeInfo(),
+                                        ],
+                                      ),
                                     ),
-                                  ),
-                                  Expanded(
-                                    flex: 1,
-                                    child: _buildPaceInfo(),
-                                  ),
-                                ],
+                                    Expanded(
+                                      flex: 1,
+                                      child: _buildPaceInfo(),
+                                    ),
+                                  ],
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
-                    ),
-                  );
-                },
-              )
-            : Center(child: CircularProgressIndicator()),
+                    );
+                  },
+                )
+              : Center(child: CircularProgressIndicator()),
+        ),
       ),
     );
   }
@@ -441,19 +457,16 @@ class _RaceResultsDetailsPageState extends State<RaceResultsDetailsPage> {
           MaterialPageRoute(builder: (context) => HomePage()),
           (route) => false,
         );
-        break;
       case 'RFID Tag Check':
         Navigator.push(
           context,
           MaterialPageRoute(builder: (context) => RFIDTagCheckPage()),
         );
-        break;
       case 'Race Result':
         Navigator.push(
           context,
           MaterialPageRoute(builder: (context) => RaceResultPage()),
         );
-        break;
       case 'Display Settings':
         Navigator.push(
           context,

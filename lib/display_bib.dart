@@ -1,14 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'dart:io';
-import 'api_service.dart';
-import 'home_page.dart';
-
 import 'background_provider.dart';
+import 'home_page.dart';
 
 class BibDetailsPage extends StatefulWidget {
   final Map<String, dynamic> bibDetails;
-  final ApiService apiService = ApiService();
 
   BibDetailsPage({required this.bibDetails});
 
@@ -17,7 +14,6 @@ class BibDetailsPage extends StatefulWidget {
 }
 
 class _BibDetailsPageState extends State<BibDetailsPage> {
-  final TextEditingController _bibController = TextEditingController();
   Map<String, dynamic>? _currentBibDetails;
 
   @override
@@ -35,7 +31,7 @@ class _BibDetailsPageState extends State<BibDetailsPage> {
   @override
   Widget build(BuildContext context) {
     final backgroundProvider = Provider.of<BackgroundProvider>(context);
-    final File? backgroundImage = backgroundProvider.bibDisplayBackgroundImage;
+    final File? backgroundImage = backgroundProvider.displayBackgroundImage;
 
     return WillPopScope(
       onWillPop: () async {
@@ -56,93 +52,128 @@ class _BibDetailsPageState extends State<BibDetailsPage> {
                   )
                 : null,
           ),
-          child: Column(
-            children: [
-              Expanded(
-                flex: 2,
-                child: Container(
-                  color: Colors.grey[200]?.withOpacity(0.7),
-                  child: Center(
-                    child: Text(
-                      "${_currentBibDetails!['bib_number']}",
-                      style:
-                          TextStyle(fontSize: 90, fontWeight: FontWeight.bold),
+          child: SafeArea(
+            child: Padding(
+              padding: EdgeInsets.all(24),
+              child: Column(
+                children: [
+                  // Floating BIB Number Container (Box A)
+                  Container(
+                    width: double.infinity,
+                    margin: EdgeInsets.symmetric(horizontal: 16, vertical: 60),
+                    decoration: BoxDecoration(
+                      color: backgroundImage != null
+                          ? Colors.black.withOpacity(0.6) // Semi-transparent
+                          : Colors.black, // Fully opaque
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.3),
+                          blurRadius: 15,
+                          offset: Offset(0, 8),
+                        ),
+                      ],
                     ),
-                  ),
-                ),
-              ),
-              Expanded(
-                flex: 1,
-                child: Row(
-                  children: [
-                    Expanded(
-                      flex: 1,
-                      child: Container(
-                        color: Colors.grey[400]?.withOpacity(0.7),
-                        child: Center(
-                          child: Text(
-                            "${_currentBibDetails!['first_name']} ${_currentBibDetails!['last_name']}",
-                            style: TextStyle(
-                                fontSize: 60, fontWeight: FontWeight.bold),
-                            textAlign: TextAlign.center,
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(vertical: 120),
+                      child: Center(
+                        child: Text(
+                          '${_currentBibDetails!['bib_number']}',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 120,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 2,
                           ),
                         ),
                       ),
                     ),
-                    Expanded(
-                      flex: 1,
-                      child: Container(
-                        color: Colors.grey[500]?.withOpacity(0.7),
-                        child: Center(
-                          child: Text(
-                            "${_currentBibDetails!['category']} Race",
-                            style: TextStyle(
-                                fontSize: 60, fontWeight: FontWeight.bold),
-                            textAlign: TextAlign.center,
+                  ),
+                  // Bottom Row Containers (Box B and C)
+                  Row(
+                    children: [
+                      // Name Container (Box B)
+                      Expanded(
+                        child: Container(
+                          margin: EdgeInsets.only(right: 12),
+                          decoration: BoxDecoration(
+                            color: backgroundImage != null
+                                ? Colors.white
+                                    .withOpacity(0.6) // Semi-transparent
+                                : Colors.white, // Fully opaque
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.1),
+                                blurRadius: 10,
+                                offset: Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: Padding(
+                            padding: EdgeInsets.all(36),
+                            child: Column(
+                              children: [
+                                Icon(Icons.person, size: 32),
+                                SizedBox(height: 8),
+                                Text(
+                                  '${_currentBibDetails!['first_name']} ${_currentBibDetails!['last_name']}',
+                                  style: TextStyle(
+                                    fontSize: 36,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                  ],
-                ),
-              ),
-              Expanded(
-                flex: 1,
-                child: Container(
-                  color: Colors.grey[300]?.withOpacity(0.7),
-                  child: Center(
-                    child: Text(
-                      "Sponsor Logo Section",
-                      style:
-                          TextStyle(fontSize: 40, fontWeight: FontWeight.bold),
-                    ),
+                      // Category Container (Box C)
+                      Expanded(
+                        child: Container(
+                          margin: EdgeInsets.only(left: 12),
+                          decoration: BoxDecoration(
+                            color: backgroundImage != null
+                                ? Colors.white
+                                    .withOpacity(0.6) // Semi-transparent
+                                : Colors.white, // Fully opaque
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.1),
+                                blurRadius: 10,
+                                offset: Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: Padding(
+                            padding: EdgeInsets.all(36),
+                            child: Column(
+                              children: [
+                                Icon(Icons.flag, size: 32),
+                                SizedBox(height: 8),
+                                Text(
+                                  '${_currentBibDetails!['category']}',
+                                  style: TextStyle(
+                                    fontSize: 36,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ),
-    );
-  }
-
-  void _showErrorDialog(String message) {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: Text('Error'),
-          content: Text(message),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: Text('OK'),
-            ),
-          ],
-        );
-      },
     );
   }
 }
