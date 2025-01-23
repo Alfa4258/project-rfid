@@ -9,6 +9,7 @@ import 'home_page.dart';
 import 'race_result_page.dart';
 import 'upload_excel.dart';
 import 'display_settings_page.dart';
+import 'db_helper.dart';
 
 enum ConnectionType { RS232, TCPIP }
 
@@ -27,8 +28,6 @@ class _RFIDTagCheckPageState extends State<RFIDTagCheckPage> {
   Socket? _socket;
   
   String connectionStatus = "Belum Terhubung";
-  String rfidData = "Menunggu data...";
-  String filteredRfidData = "Menunggu data...";
 
   Timer? _debounceTimer;
   static const Duration _debounceDuration = Duration(seconds: 1);
@@ -121,7 +120,6 @@ class _RFIDTagCheckPageState extends State<RFIDTagCheckPage> {
 
     try {
       // Send a test command to the RFID reader
-      // Replace this with an appropriate command for your RFID reader
       _serialPort!.write(Uint8List.fromList([0x10, 0x03, 0x01, 0x14]));
 
       // Wait for a response (adjust timeout as needed)
@@ -138,7 +136,6 @@ class _RFIDTagCheckPageState extends State<RFIDTagCheckPage> {
 
     return false;
   }
-
 
   void _disconnectSerialPort() {
     _portReader?.close();
@@ -184,8 +181,6 @@ class _RFIDTagCheckPageState extends State<RFIDTagCheckPage> {
     final extractedData = _extractSpecificData(hexData);
 
     setState(() {
-      rfidData = hexData;
-      filteredRfidData = extractedData;
       _bibController.text = extractedData;
     });
 
@@ -212,10 +207,6 @@ class _RFIDTagCheckPageState extends State<RFIDTagCheckPage> {
   void _updateConnectionStatus(String status) {
     setState(() {
       connectionStatus = status;
-      if (status.contains("Belum Terhubung") || status.contains("gagal") || status.contains("Error")) {
-        rfidData = "Menunggu data...";
-        filteredRfidData = "Menunggu data...";
-      }
     });
   }
 
@@ -228,32 +219,39 @@ class _RFIDTagCheckPageState extends State<RFIDTagCheckPage> {
     });
   }
 
-  Future<void> _fetchBibDetails(String bibNumber) async {
-    if (_isProcessing) return;
+Future<void> _fetchBibDetails(String bibNumber) async {
+  if (_isProcessing) return;
 
-    setState(() {
-      _isProcessing = true;
-    });
+  setState(() {
+    _isProcessing = true;
+  });
 
-    try {
-      final bibDetails = await _apiService.fetchBibDetails(bibNumber);
-      if (bibDetails != null) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-              builder: (context) => BibDetailsPage(bibDetails: bibDetails)),
-        );
-      } else {
-        _showErrorDialog('BIB Number not found');
-      }
-    } catch (_) {
-      _showErrorDialog('Error fetching BIB details');
-    } finally {
-      setState(() {
-        _isProcessing = false;
-      });
+  try {
+    final dbHelper = DatabaseHelper();
+
+    // Ensure the database is initialized
+    await dbHelper.database;  // This will ensure the database is fully initialized before performing any queries
+
+    final bibDetails = await dbHelper.getParticipant(bibNumber);
+
+    if (bibDetails != null) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => BibDetailsPage(bibDetails: bibDetails),
+        ),
+      );
+    } else {
+      _showErrorDialog('BIB Number not found');
     }
+  } catch (e) {
+    _showErrorDialog('Error fetching BIB details: $e');
+  } finally {
+    setState(() {
+      _isProcessing = false;
+    });
   }
+}
 
   void _showErrorDialog(String message) {
     showDialog(
@@ -414,16 +412,6 @@ class _RFIDTagCheckPageState extends State<RFIDTagCheckPage> {
                       ? Colors.green
                       : Colors.red,
                 ),
-              ),
-              SizedBox(height: 20),
-              Text(
-                'Data RFID (Hex): $rfidData',
-                style: TextStyle(fontSize: 16, color: Colors.black),
-              ),
-              SizedBox(height: 10),
-              Text(
-                'Filtered Data: $filteredRfidData',
-                style: TextStyle(fontSize: 16, color: Colors.black),
               ),
               SizedBox(height: 20),
               DropdownButton<String>(

@@ -3,11 +3,20 @@ import 'dart:async';
 import 'package:provider/provider.dart';
 import 'home_page.dart';
 import 'background_provider.dart';
+import 'connection_provider.dart';
+import 'package:sqflite_common_ffi/sqflite_ffi.dart';  // Import sqflite_common_ffi
 
 void main() {
+  // Initialize sqflite for desktop platforms
+  sqfliteFfiInit();  // Initialize the sqflite ffi package
+  databaseFactory = databaseFactoryFfi; // Set the FFI database factory for SQLite
+
   runApp(
-    ChangeNotifierProvider(
-      create: (context) => BackgroundProvider(),
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (context) => BackgroundProvider()),
+        ChangeNotifierProvider(create: (context) => ConnectionSettingsProvider()),
+      ],
       child: MyApp(),
     ),
   );

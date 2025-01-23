@@ -3,12 +3,13 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_libserialport/flutter_libserialport.dart';
 import 'dart:typed_data';
-import 'api_service.dart';  
-import 'home_page.dart';   
-import 'display_settings_page.dart';  
-import 'rfid_check_page.dart'; 
+import 'api_service.dart';
+import 'home_page.dart';
+import 'display_settings_page.dart';
+import 'rfid_check_page.dart';
 import 'display_race_result.dart';
 import 'upload_excel.dart';
+import 'db_helper.dart';
 
 enum ConnectionType { RS232, TCPIP }
 
@@ -19,11 +20,11 @@ class RaceResultPage extends StatefulWidget {
 
 class _RaceResultPageState extends State<RaceResultPage> {
   final TextEditingController _bibController = TextEditingController();
-  final ApiService _apiService = ApiService(); 
+  final ApiService _apiService = ApiService();
 
   SerialPort? _serialPort;
   SerialPortReader? _portReader;
-  
+
   Socket? _socket;
 
   String connectionStatus = "Belum Terhubung";
@@ -79,8 +80,7 @@ class _RaceResultPageState extends State<RaceResultPage> {
     try {
       _serialPort = SerialPort(_selectedPort!);
 
-      _serialPort!.config = SerialPortConfig()
-        ..baudRate = _baudRate;
+      _serialPort!.config = SerialPortConfig()..baudRate = _baudRate;
 
       if (_serialPort!.openReadWrite()) {
         _updateConnectionStatus("Terhubung ke RFID reader (RS232)");
@@ -120,16 +120,14 @@ class _RaceResultPageState extends State<RaceResultPage> {
     }
 
     try {
-      // Send a test command to the RFID reader
-      // Replace this with an appropriate command for your RFID reader
       _serialPort!.write(Uint8List.fromList([0x10, 0x03, 0x01, 0x14]));
 
-      // Wait for a response (adjust timeout as needed)
       await Future.delayed(Duration(seconds: 2));
 
-      // Check if any data was received
       if (_portReader != null) {
-        var data = await _portReader!.stream.first.timeout(Duration(seconds: 5), onTimeout: () => Uint8List(0));
+        var data = await _portReader!.stream
+            .first
+            .timeout(Duration(seconds: 5), onTimeout: () => Uint8List(0));
         return data.isNotEmpty;
       }
     } catch (e) {
@@ -138,7 +136,6 @@ class _RaceResultPageState extends State<RaceResultPage> {
 
     return false;
   }
-
 
   void _disconnectSerialPort() {
     _portReader?.close();
@@ -171,12 +168,14 @@ class _RaceResultPageState extends State<RaceResultPage> {
   }
 
   void _handleSerialPortData(Uint8List data) {
-    final hexData = data.map((e) => e.toRadixString(16).padLeft(2, '0')).join(' ');
+    final hexData =
+        data.map((e) => e.toRadixString(16).padLeft(2, '0')).join(' ');
     _processRfidData(hexData);
   }
 
   void _handleSocketData(List<int> event) {
-    final hexData = event.map((e) => e.toRadixString(16).padLeft(2, '0')).join(' ');
+    final hexData =
+        event.map((e) => e.toRadixString(16).padLeft(2, '0')).join(' ');
     _processRfidData(hexData);
   }
 
@@ -212,7 +211,9 @@ class _RaceResultPageState extends State<RaceResultPage> {
   void _updateConnectionStatus(String status) {
     setState(() {
       connectionStatus = status;
-      if (status.contains("Belum Terhubung") || status.contains("gagal") || status.contains("Error")) {
+      if (status.contains("Belum Terhubung") ||
+          status.contains("gagal") ||
+          status.contains("Error")) {
         rfidData = "Menunggu data...";
         filteredRfidData = "Menunggu data...";
       }
@@ -228,32 +229,39 @@ class _RaceResultPageState extends State<RaceResultPage> {
     });
   }
 
-  Future<void> _fetchBibDetails(String bibNumber) async {
-    if (_isProcessing) return;
+Future<void> _fetchBibDetails(String bibNumber) async {
+  if (_isProcessing) return;
 
-    setState(() {
-      _isProcessing = true;
-    });
+  setState(() {
+    _isProcessing = true;
+  });
 
-    try {
-      final bibDetails = await _apiService.fetchBibDetails(bibNumber);
-      if (bibDetails != null) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-              builder: (context) => RaceResultsDetailsPage(raceResultsDetails: bibDetails)),
-        );
-      } else {
-        _showErrorDialog('BIB Number not found');
-      }
-    } catch (_) {
-      _showErrorDialog('Error fetching BIB details');
-    } finally {
-      setState(() {
-        _isProcessing = false;
-      });
+  try {
+    final dbHelper = DatabaseHelper();
+
+    // Ensure the database is initialized
+    await dbHelper.database;  // This will ensure the database is fully initialized before performing any queries
+
+    final raceResultsDetails = await dbHelper.getParticipant(bibNumber);
+
+    if (raceResultsDetails != null) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => RaceResultsDetailsPage(raceResultsDetails: raceResultsDetails),
+        ),
+      );
+    } else {
+      _showErrorDialog('BIB Number not found');
     }
+  } catch (e) {
+    _showErrorDialog('Error fetching BIB details: $e');
+  } finally {
+    setState(() {
+      _isProcessing = false;
+    });
   }
+}
 
   void _toggleConnectionType() {
     _disconnectRfidReader();
@@ -272,9 +280,9 @@ class _RaceResultPageState extends State<RaceResultPage> {
         Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(builder: (context) => HomePage()),
-          (route) => false, 
+          (route) => false,
         );
-        return false; 
+        return false;
       },
       child: Scaffold(
         backgroundColor: Color(0xFFCDC4C4),
@@ -336,7 +344,7 @@ class _RaceResultPageState extends State<RaceResultPage> {
                   Navigator.pushAndRemoveUntil(
                     context,
                     MaterialPageRoute(builder: (context) => HomePage()),
-                    (route) => false, // Navigate to the home screen
+                    (route) => false,
                   );
                 } else if (value == 'RFID Tag Check') {
                   Navigator.push(
@@ -348,7 +356,7 @@ class _RaceResultPageState extends State<RaceResultPage> {
                     context,
                     MaterialPageRoute(builder: (context) => RaceResultPage()),
                   );
-                }else if (value == 'Upload Excel') {
+                } else if (value == 'Upload Excel') {
                   Navigator.push(
                     context,
                     MaterialPageRoute(builder: (context) => ExcelUploadPage()),
@@ -404,7 +412,11 @@ class _RaceResultPageState extends State<RaceResultPage> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.wifi_tethering, size: 100, color: Colors.black54,),
+              Icon(
+                Icons.wifi_tethering,
+                size: 100,
+                color: Colors.black54,
+              ),
               SizedBox(height: 20),
               Text(
                 connectionStatus,
