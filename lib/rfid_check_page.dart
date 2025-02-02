@@ -1,14 +1,14 @@
 import 'dart:async';
-import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:flutter_libserialport/flutter_libserialport.dart';
 import 'dart:typed_data';
+import 'package:provider/provider.dart';
 import 'api_service.dart';
 import 'display_bib.dart';
 import 'home_page.dart';
 import 'race_result_page.dart';
 import 'upload_excel.dart';
 import 'display_settings_page.dart';
+import 'connection_provider.dart';
 
 enum ConnectionType { RS232, TCPIP }
 
@@ -17,14 +17,9 @@ class RFIDTagCheckPage extends StatefulWidget {
   _RFIDTagCheckPageState createState() => _RFIDTagCheckPageState();
 }
 
-class _RFIDTagCheckPageState extends State<RFIDTagCheckPage> {
+class _RFIDTagCheckPageState extends State<RFIDTagCheckPage> with SingleTickerProviderStateMixin {
   final _bibController = TextEditingController();
   final ApiService _apiService = ApiService();
-  
-  SerialPort? _serialPort;
-  SerialPortReader? _portReader;
-  
-  Socket? _socket;
   
   String connectionStatus = "Belum Terhubung";
   String rfidData = "Menunggu data...";
@@ -34,140 +29,55 @@ class _RFIDTagCheckPageState extends State<RFIDTagCheckPage> {
   static const Duration _debounceDuration = Duration(seconds: 1);
   bool _isProcessing = false;
 
-  ConnectionType _currentConnectionType = ConnectionType.RS232;
-
-  List<String> _availablePorts = [];
-  String? _selectedPort;
-  int _baudRate = 115200;
+  late TabController _tabController;
 
   @override
   void initState() {
     super.initState();
-    _updateAvailablePorts();
+    _tabController = TabController(length: 2, vsync: this);
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initializeConnection();
+    });
+  }
+
+  void _initializeConnection() {
+    final provider = Provider.of<ConnectionSettingsProvider>(context, listen: false);
+    if (provider.isConnected) {
+      _setupDataListeners(provider);
+      setState(() {
+        connectionStatus = "Connected to RFID reader (${provider.connectionType})";
+      });
+    } else {
+      provider.connect().then((success) {
+        if (success) {
+          _setupDataListeners(provider);
+          setState(() {
+            connectionStatus = "Connected to RFID reader (${provider.connectionType})";
+          });
+        } else {
+          setState(() {
+            connectionStatus = "Failed to connect";
+          });
+        }
+      });
+    }
+  }
+
+  void _setupDataListeners(ConnectionSettingsProvider provider) {
+    provider.setDataCallback(_handleRfidData);
+  }
+
+  void _handleRfidData(Uint8List data) {
+    final hexData = data.map((e) => e.toRadixString(16).padLeft(2, '0')).join(' ');
+    _processRfidData(hexData);
   }
 
   @override
   void dispose() {
-    _disconnectRfidReader();
     _bibController.dispose();
     _debounceTimer?.cancel();
+    _tabController.dispose();
     super.dispose();
-  }
-
-  Future<void> _connectToRfidReader() async {
-    if (_currentConnectionType == ConnectionType.RS232) {
-      await _configureSerialPort();
-    } else {
-      await _connectToRfidScannerTCP();
-    }
-  }
-
-  void _disconnectRfidReader() {
-    if (_currentConnectionType == ConnectionType.RS232) {
-      _disconnectSerialPort();
-    } else {
-      _disconnectSocket();
-    }
-  }
-
-  Future<void> _configureSerialPort() async {
-    if (_selectedPort == null) {
-      _updateConnectionStatus("No port selected");
-      return;
-    }
-
-    try {
-      _serialPort = SerialPort(_selectedPort!);
-
-      _serialPort!.config = SerialPortConfig()
-        ..baudRate = _baudRate;
-
-      if (_serialPort!.openReadWrite()) {
-        _updateConnectionStatus("Terhubung ke RFID reader (RS232)");
-        _portReader = SerialPortReader(_serialPort!);
-        _portReader!.stream.listen(
-          _handleSerialPortData,
-          onError: (error) {
-            print("RS232 Error: $error");
-            _updateConnectionStatus("Error RS232: $error");
-          },
-          onDone: () {
-            print("RS232 connection closed");
-            _updateConnectionStatus("Koneksi RS232 terputus");
-          },
-        );
-
-        // Test the connection
-        if (await _testConnection()) {
-          print("RS232 connection test successful");
-        } else {
-          print("RS232 connection test failed");
-          _updateConnectionStatus("RS232 connection test failed");
-        }
-      } else {
-        print("Failed to open RS232 port");
-        _updateConnectionStatus("Gagal membuka port RS232");
-      }
-    } catch (e) {
-      print("RS232 Configuration Error: $e");
-      _updateConnectionStatus("RS232 Error: $e");
-    }
-  }
-
-  Future<bool> _testConnection() async {
-    if (_serialPort == null || !_serialPort!.isOpen) {
-      return false;
-    }
-
-    try {
-      // Send a test command to the RFID reader
-      // Replace this with an appropriate command for your RFID reader
-      _serialPort!.write(Uint8List.fromList([0x10, 0x03, 0x01, 0x14]));
-
-      // Wait for a response (adjust timeout as needed)
-      await Future.delayed(Duration(seconds: 2));
-
-      // Check if any data was received
-      if (_portReader != null) {
-        var data = await _portReader!.stream.first.timeout(Duration(seconds: 5), onTimeout: () => Uint8List(0));
-        return data.isNotEmpty;
-      }
-    } catch (e) {
-      print("Connection test error: $e");
-    }
-
-    return false;
-  }
-
-
-  void _disconnectSerialPort() {
-    _portReader?.close();
-    _serialPort?.close();
-    _serialPort = null;
-    _updateConnectionStatus("Koneksi RS232 terputus");
-  }
-
-  Future<void> _connectToRfidScannerTCP() async {
-    if (_socket != null) return;
-
-    try {
-      _socket = await Socket.connect('192.168.1.200', 2022);
-      _updateConnectionStatus("Terhubung ke RFID scanner (TCP/IP)");
-
-      _socket!.listen(
-        _handleSocketData,
-        onDone: () => _disconnectSocket("Koneksi TCP/IP ditutup oleh server."),
-        onError: (error) => _disconnectSocket("Error TCP/IP: $error"),
-      );
-    } catch (e) {
-      _updateConnectionStatus("Koneksi TCP/IP gagal: $e");
-    }
-  }
-
-  void _disconnectSocket([String message = "Koneksi TCP/IP terputus"]) {
-    _socket?.destroy();
-    _socket = null;
-    _updateConnectionStatus(message);
   }
 
   void _handleSerialPortData(Uint8List data) {
@@ -198,15 +108,6 @@ class _RFIDTagCheckPageState extends State<RFIDTagCheckPage> {
       return "${dataParts[21]}${dataParts[22]}";
     }
     return "";
-  }
-
-  void _updateAvailablePorts() {
-    setState(() {
-      _availablePorts = SerialPort.availablePorts;
-      if (_availablePorts.isNotEmpty && _selectedPort == null) {
-        _selectedPort = _availablePorts.first;
-      }
-    });
   }
 
   void _updateConnectionStatus(String status) {
@@ -258,25 +159,21 @@ class _RFIDTagCheckPageState extends State<RFIDTagCheckPage> {
   void _showErrorDialog(String message) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Error'),
-        content: Text(message),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.of(context).pop(), child: Text('OK'))
-        ],
-      ),
+      builder: (context) {
+        return AlertDialog(
+          title: Text('Error'),
+          content: Text(message),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: Text('OK'),
+            ),
+          ],
+        );
+      },
     );
-  }
-
-  void _toggleConnectionType() {
-    _disconnectRfidReader();
-    setState(() {
-      _currentConnectionType = _currentConnectionType == ConnectionType.RS232
-          ? ConnectionType.TCPIP
-          : ConnectionType.RS232;
-    });
-    _connectToRfidReader();
   }
 
   @override
@@ -300,10 +197,7 @@ class _RFIDTagCheckPageState extends State<RFIDTagCheckPage> {
               SizedBox(width: 10),
               Text(
                 'Labsco Sport',
-                style: TextStyle(
-                    color: Colors.black,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold),
+                style: TextStyle(color: Colors.black, fontSize: 20, fontWeight: FontWeight.bold),
               ),
             ],
           ),
@@ -341,7 +235,7 @@ class _RFIDTagCheckPageState extends State<RFIDTagCheckPage> {
             ),
             PopupMenuButton<String>(
               icon: Icon(Icons.menu, color: Colors.black),
-              onSelected: (value) async {
+              onSelected: (value) {
                 if (value == 'Home') {
                   Navigator.pushAndRemoveUntil(
                     context,
@@ -349,7 +243,7 @@ class _RFIDTagCheckPageState extends State<RFIDTagCheckPage> {
                     (route) => false,
                   );
                 } else if (value == 'RFID Tag Check') {
-                  Navigator.pushReplacement(
+                  Navigator.push(
                     context,
                     MaterialPageRoute(builder: (context) => RFIDTagCheckPage()),
                   );
@@ -366,36 +260,46 @@ class _RFIDTagCheckPageState extends State<RFIDTagCheckPage> {
                 } else if (value == 'Display Settings') {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(
-                        builder: (context) => ChangeBackgroundPage()),
+                    MaterialPageRoute(builder: (context) => ChangeBackgroundPage()),
                   );
                 }
               },
               itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
                 PopupMenuItem<String>(
-                    value: 'Home',
-                    child: ListTile(
-                        leading: Icon(Icons.home), title: Text('Home'))),
+                  value: 'Home',
+                  child: ListTile(
+                    leading: Icon(Icons.home),
+                    title: Text('Home'),
+                  ),
+                ),
                 PopupMenuItem<String>(
-                    value: 'RFID Tag Check',
-                    child: ListTile(
-                        leading: Icon(Icons.info),
-                        title: Text('RFID Tag Check'))),
+                  value: 'RFID Tag Check',
+                  child: ListTile(
+                    leading: Icon(Icons.info),
+                    title: Text('RFID Tag Check'),
+                  ),
+                ),
                 PopupMenuItem<String>(
-                    value: 'Race Result',
-                    child: ListTile(
-                        leading: Icon(Icons.insert_chart_outlined),
-                        title: Text('Race Result'))),
+                  value: 'Race Result',
+                  child: ListTile(
+                    leading: Icon(Icons.insert_chart_outlined),
+                    title: Text('Race Result'),
+                  ),
+                ),
                 PopupMenuItem<String>(
-                    value: 'Upload Excel',
-                    child: ListTile(
-                        leading: Icon(Icons.upload_file),
-                        title: Text('Upload Excel'))),
+                  value: 'Upload Excel',
+                  child: ListTile(
+                    leading: Icon(Icons.upload_file),
+                    title: Text('Upload Excel'),
+                  ),
+                ),
                 PopupMenuItem<String>(
-                    value: 'Display Settings',
-                    child: ListTile(
-                        leading: Icon(Icons.settings),
-                        title: Text('Display Settings'))),
+                  value: 'Display Settings',
+                  child: ListTile(
+                    leading: Icon(Icons.settings),
+                    title: Text('Display Settings'),
+                  ),
+                ),
               ],
             ),
           ],
@@ -410,9 +314,8 @@ class _RFIDTagCheckPageState extends State<RFIDTagCheckPage> {
                 connectionStatus,
                 style: TextStyle(
                   fontSize: 18,
-                  color: connectionStatus.contains("Terhubung")
-                      ? Colors.green
-                      : Colors.red,
+                  // color: _isConnected ? Colors.green : Colors.red,
+                  color: connectionStatus.contains("Connected") ? Colors.green : Colors.red,
                 ),
               ),
               SizedBox(height: 20),
@@ -425,34 +328,7 @@ class _RFIDTagCheckPageState extends State<RFIDTagCheckPage> {
                 'Filtered Data: $filteredRfidData',
                 style: TextStyle(fontSize: 16, color: Colors.black),
               ),
-              SizedBox(height: 20),
-              DropdownButton<String>(
-                value: _selectedPort,
-                items: _availablePorts.map((String port) {
-                  return DropdownMenuItem<String>(
-                    value: port,
-                    child: Text(port),
-                  );
-                }).toList(),
-                onChanged: (String? newValue) {
-                  setState(() {
-                    _selectedPort = newValue;
-                  });
-                },
-                hint: Text('Select COM Port'),
-              ),
-              SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: _configureSerialPort,
-                child: Text('Connect RS232'),
-              ),
-              SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: _toggleConnectionType,
-                child: Text(_currentConnectionType == ConnectionType.RS232
-                    ? 'Switch to TCP/IP'
-                    : 'Switch to RS232'),
-              ),
+              SizedBox(height: 40),
             ],
           ),
         ),

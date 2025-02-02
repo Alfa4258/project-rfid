@@ -3,11 +3,15 @@ import 'dart:async';
 import 'package:provider/provider.dart';
 import 'home_page.dart';
 import 'background_provider.dart';
+import 'connection_provider.dart';
 
 void main() {
   runApp(
-    ChangeNotifierProvider(
-      create: (context) => BackgroundProvider(),
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (context) => BackgroundProvider()),
+        ChangeNotifierProvider(create: (context) => ConnectionSettingsProvider()),
+      ],
       child: MyApp(),
     ),
   );
@@ -52,7 +56,7 @@ class _SplashScreenState extends State<SplashScreen> {
       body: Container(
         decoration: BoxDecoration(
           image: DecorationImage(
-            image: AssetImage('assets/regulus.png'),
+            image: AssetImage('assets/marathon.jpg'),
             fit: BoxFit.cover,
           ),
         ),
