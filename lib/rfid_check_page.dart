@@ -8,6 +8,7 @@ import 'home_page.dart';
 import 'race_result_page.dart';
 import 'upload_excel.dart';
 import 'display_settings_page.dart';
+import 'db_helper.dart';
 import 'connection_provider.dart';
 
 enum ConnectionType { RS232, TCPIP }
@@ -94,8 +95,6 @@ class _RFIDTagCheckPageState extends State<RFIDTagCheckPage> with SingleTickerPr
     final extractedData = _extractSpecificData(hexData);
 
     setState(() {
-      rfidData = hexData;
-      filteredRfidData = extractedData;
       _bibController.text = extractedData;
     });
 
@@ -113,10 +112,6 @@ class _RFIDTagCheckPageState extends State<RFIDTagCheckPage> with SingleTickerPr
   void _updateConnectionStatus(String status) {
     setState(() {
       connectionStatus = status;
-      if (status.contains("Belum Terhubung") || status.contains("gagal") || status.contains("Error")) {
-        rfidData = "Menunggu data...";
-        filteredRfidData = "Menunggu data...";
-      }
     });
   }
 
@@ -129,32 +124,39 @@ class _RFIDTagCheckPageState extends State<RFIDTagCheckPage> with SingleTickerPr
     });
   }
 
-  Future<void> _fetchBibDetails(String bibNumber) async {
-    if (_isProcessing) return;
+Future<void> _fetchBibDetails(String bibNumber) async {
+  if (_isProcessing) return;
 
-    setState(() {
-      _isProcessing = true;
-    });
+  setState(() {
+    _isProcessing = true;
+  });
 
-    try {
-      final bibDetails = await _apiService.fetchBibDetails(bibNumber);
-      if (bibDetails != null) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-              builder: (context) => BibDetailsPage(bibDetails: bibDetails)),
-        );
-      } else {
-        _showErrorDialog('BIB Number not found');
-      }
-    } catch (_) {
-      _showErrorDialog('Error fetching BIB details');
-    } finally {
-      setState(() {
-        _isProcessing = false;
-      });
+  try {
+    final dbHelper = DatabaseHelper();
+
+    // Ensure the database is initialized
+    await dbHelper.database;  // This will ensure the database is fully initialized before performing any queries
+
+    final bibDetails = await dbHelper.getParticipant(bibNumber);
+
+    if (bibDetails != null) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => BibDetailsPage(bibDetails: bibDetails),
+        ),
+      );
+    } else {
+      _showErrorDialog('BIB Number not found');
     }
+  } catch (e) {
+    _showErrorDialog('Error fetching BIB details: $e');
+  } finally {
+    setState(() {
+      _isProcessing = false;
+    });
   }
+}
 
   void _showErrorDialog(String message) {
     showDialog(

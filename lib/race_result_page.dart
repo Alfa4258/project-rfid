@@ -8,6 +8,7 @@ import 'display_settings_page.dart';
 import 'rfid_check_page.dart';
 import 'display_race_result.dart';
 import 'upload_excel.dart';
+import 'db_helper.dart';
 import 'connection_provider.dart';
 
 enum ConnectionType { RS232, TCPIP }
@@ -19,7 +20,7 @@ class RaceResultPage extends StatefulWidget {
 
 class _RaceResultPageState extends State<RaceResultPage> with SingleTickerProviderStateMixin {
   final TextEditingController _bibController = TextEditingController();
-  final ApiService _apiService = ApiService();
+  final ApiService _apiService = ApiService(); 
 
   String connectionStatus = "Belum Terhubung";
   String rfidData = "Menunggu data...";
@@ -81,12 +82,14 @@ class _RaceResultPageState extends State<RaceResultPage> with SingleTickerProvid
   }
 
   void _handleSerialPortData(Uint8List data) {
-    final hexData = data.map((e) => e.toRadixString(16).padLeft(2, '0')).join(' ');
+    final hexData =
+        data.map((e) => e.toRadixString(16).padLeft(2, '0')).join(' ');
     _processRfidData(hexData);
   }
 
   void _handleSocketData(List<int> event) {
-    final hexData = event.map((e) => e.toRadixString(16).padLeft(2, '0')).join(' ');
+    final hexData =
+        event.map((e) => e.toRadixString(16).padLeft(2, '0')).join(' ');
     _processRfidData(hexData);
   }
 
@@ -113,7 +116,9 @@ class _RaceResultPageState extends State<RaceResultPage> with SingleTickerProvid
   void _updateConnectionStatus(String status) {
     setState(() {
       connectionStatus = status;
-      if (status.contains("Belum Terhubung") || status.contains("gagal") || status.contains("Error")) {
+      if (status.contains("Belum Terhubung") ||
+          status.contains("gagal") ||
+          status.contains("Error")) {
         rfidData = "Menunggu data...";
         filteredRfidData = "Menunggu data...";
       }
@@ -129,32 +134,41 @@ class _RaceResultPageState extends State<RaceResultPage> with SingleTickerProvid
     });
   }
 
-  Future<void> _fetchBibDetails(String bibNumber) async {
-    if (_isProcessing) return;
+Future<void> _fetchBibDetails(String bibNumber) async {
+  if (_isProcessing) return;
 
-    setState(() {
-      _isProcessing = true;
-    });
+  setState(() {
+    _isProcessing = true;
+  });
 
-    try {
-      final bibDetails = await _apiService.fetchBibDetails(bibNumber);
-      if (bibDetails != null) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-              builder: (context) => RaceResultsDetailsPage(raceResultsDetails: bibDetails)),
-        );
-      } else {
-        _showErrorDialog('BIB Number not found');
-      }
-    } catch (_) {
-      _showErrorDialog('Error fetching BIB details');
-    } finally {
-      setState(() {
-        _isProcessing = false;
-      });
+  try {
+    final dbHelper = DatabaseHelper();
+
+    // Ensure the database is initialized
+    await dbHelper.database;  // This will ensure the database is fully initialized before performing any queries
+
+    final raceResultsDetails = await dbHelper.getParticipant(bibNumber);
+
+    if (raceResultsDetails != null) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => RaceResultsDetailsPage(raceResultsDetails: raceResultsDetails),
+        ),
+      );
+    } else {
+      _showErrorDialog('BIB Number not found');
     }
+  } catch (e) {
+    _showErrorDialog('Error fetching BIB details: $e');
+  } finally {
+    setState(() {
+      _isProcessing = false;
+    });
   }
+}
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -288,7 +302,11 @@ class _RaceResultPageState extends State<RaceResultPage> with SingleTickerProvid
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.wifi_tethering, size: 100, color: Colors.black54),
+              Icon(
+                Icons.wifi_tethering,
+                size: 100,
+                color: Colors.black54,
+              ),
               SizedBox(height: 20),
               Text(
                 connectionStatus,

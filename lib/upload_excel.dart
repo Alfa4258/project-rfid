@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'dart:io';
-import 'package:http/http.dart' as http;
+import 'db_helper.dart';
+import 'excel_helper.dart';
+import 'home_page.dart';
+import 'race_result_page.dart';
 import 'rfid_check_page.dart';
 import 'display_settings_page.dart';
-import 'race_result_page.dart';
-import 'home_page.dart';
 
 class ExcelUploadPage extends StatefulWidget {
   @override
@@ -16,6 +17,7 @@ class _ExcelUploadPageState extends State<ExcelUploadPage> {
   File? _selectedFile;
   bool _isUploading = false;
   String _uploadStatus = '';
+  List<Map<String, dynamic>> _participants = [];
 
   Future<void> _pickFile() async {
     final result = await FilePicker.platform.pickFiles(
@@ -42,27 +44,21 @@ class _ExcelUploadPageState extends State<ExcelUploadPage> {
       _uploadStatus = 'Uploading...';
     });
 
-    var uri = Uri.parse('http://127.0.0.1:8000/api/upload-db');
-    var request = http.MultipartRequest('POST', uri);
-
-    request.files
-        .add(await http.MultipartFile.fromPath('file', _selectedFile!.path));
-
     try {
-      var response = await request.send();
-      if (response.statusCode == 200) {
-        setState(() {
-          _uploadStatus = 'File uploaded successfully!';
-        });
-      } else {
-        setState(() {
-          _uploadStatus =
-              'File upload failed with status: ${response.statusCode}';
-        });
-      }
+      // Parse Excel file
+      List<Map<String, dynamic>> parsedData = await parseExcelFile(_selectedFile!);
+
+      // Update database
+      await DatabaseHelper().updateDatabaseFromExcel(parsedData);
+
+      setState(() {
+        _uploadStatus = 'Database updated successfully!';
+      });
+
+      await _fetchParticipants(); // Refresh the participant list
     } catch (e) {
       setState(() {
-        _uploadStatus = 'Error uploading file: $e';
+        _uploadStatus = 'Error updating database: $e';
       });
     } finally {
       setState(() {
@@ -71,157 +67,147 @@ class _ExcelUploadPageState extends State<ExcelUploadPage> {
     }
   }
 
-  Future<bool> _onWillPop() async {
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(builder: (context) => HomePage()),
-      (route) => false,
-    );
-    return false;
+  Future<void> _fetchParticipants() async {
+    List<Map<String, dynamic>> participants = await DatabaseHelper().getAllParticipants();
+    setState(() {
+      _participants = participants;
+    });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchParticipants(); // Load participants on start
   }
 
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: _onWillPop,
-      child: Scaffold(
-        backgroundColor: Color(0xFFCDC4C4),
-        appBar: AppBar(
-          backgroundColor: Colors.grey[200],
-          elevation: 0,
-          title: Row(
-            children: [
-              Image.asset(
-                'assets/logo.png',
-                height: 40,
-              ),
-              SizedBox(width: 10),
-              Text(
-                'Labsco Sport',
-                style: TextStyle(
+    return Scaffold(
+      backgroundColor: Color(0xFFCDC4C4), // Set background color here
+      appBar: AppBar(
+        backgroundColor: Colors.grey[200],
+        title: Row(
+          children: [
+            Image.asset('assets/logo.png', height: 30),
+            SizedBox(width: 10),
+            Text(
+              'Labsco Sport',
+              style: TextStyle(
                   color: Colors.black,
                   fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            PopupMenuButton<String>(
-              icon: Icon(Icons.menu, color: Colors.black),
-              onSelected: (value) async {
-                if (value == 'Home') {
-                  Navigator.pushAndRemoveUntil(
-                    context,
-                    MaterialPageRoute(builder: (context) => HomePage()),
-                    (route) => false,
-                  );
-                } else if (value == 'RFID Tag Check') {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => RFIDTagCheckPage()),
-                  );
-                } else if (value == 'Race Result') {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => RaceResultPage()),
-                  );
-                } else if (value == 'Upload Excel') {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => ExcelUploadPage()),
-                  );
-                } else if (value == 'Display Settings') {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (context) => ChangeBackgroundPage()),
-                  );
-                }
-              },
-              itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
-                PopupMenuItem<String>(
-                  value: 'Home',
-                  child: ListTile(
-                    leading: Icon(Icons.home),
-                    title: Text('Home'),
-                  ),
-                ),
-                PopupMenuItem<String>(
-                  value: 'RFID Tag Check',
-                  child: ListTile(
-                    leading: Icon(Icons.info),
-                    title: Text('RFID Tag Check'),
-                  ),
-                ),
-                PopupMenuItem<String>(
-                  value: 'Race Result',
-                  child: ListTile(
-                    leading: Icon(Icons.insert_chart_outlined_outlined),
-                    title: Text('Race Result'),
-                  ),
-                ),
-                PopupMenuItem<String>(
-                  value: 'Upload Excel',
-                  child: ListTile(
-                    leading: Icon(Icons.upload_file),
-                    title: Text('Upload Excel'),
-                  ),
-                ),
-                PopupMenuItem<String>(
-                  value: 'Display Settings',
-                  child: ListTile(
-                    leading: Icon(Icons.settings),
-                    title: Text('Display Settings'),
-                  ),
-                ),
-              ],
+                  fontWeight: FontWeight.bold),
             ),
           ],
         ),
-        body: Center(
-          child: Container(
-            margin: EdgeInsets.all(20),
-            height: 600,
-            width: MediaQuery.of(context).size.width * 0.8,
-            padding: EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: Colors.grey[300],
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  'Select an Excel file to upload:',
-                  style: TextStyle(fontSize: 18),
-                ),
-                SizedBox(height: 20),
-                ElevatedButton(
-                  onPressed: _pickFile,
-                  child: Text('Choose Excel File'),
-                ),
-                SizedBox(height: 10),
-                if (_selectedFile != null)
-                  Text(
-                    'Selected file: ${_selectedFile!.path.split('/').last}',
-                    style: TextStyle(fontSize: 16),
-                  ),
-                SizedBox(height: 20),
-                ElevatedButton(
-                  onPressed: _isUploading ? null : _uploadFile,
-                  child: _isUploading
-                      ? CircularProgressIndicator()
-                      : Text('Upload File'),
-                ),
-                SizedBox(height: 20),
-                Text(
-                  _uploadStatus,
-                  style: TextStyle(color: Colors.green, fontSize: 16),
-                ),
-              ],
-            ),
+        actions: [
+          PopupMenuButton<String>(
+            icon: Icon(Icons.menu, color: Colors.black),
+            onSelected: (value) async {
+              if (value == 'Home') {
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(builder: (context) => HomePage()),
+                  (route) => false,
+                );
+              } else if (value == 'RFID Tag Check') {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => RFIDTagCheckPage()),
+                );
+              } else if (value == 'Race Result') {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => RaceResultPage()),
+                );
+              } else if (value == 'Upload Excel') {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => ExcelUploadPage()),
+                );
+              } else if (value == 'Display Settings') {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => ChangeBackgroundPage()),
+                );
+              }
+            },
+            itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+              PopupMenuItem<String>(
+                  value: 'Home',
+                  child: ListTile(leading: Icon(Icons.home), title: Text('Home'))),
+              PopupMenuItem<String>(
+                  value: 'RFID Tag Check',
+                  child: ListTile(leading: Icon(Icons.info), title: Text('RFID Tag Check'))),
+              PopupMenuItem<String>(
+                  value: 'Race Result',
+                  child: ListTile(leading: Icon(Icons.insert_chart_outlined), title: Text('Race Result'))),
+              PopupMenuItem<String>(
+                  value: 'Upload Excel',
+                  child: ListTile(leading: Icon(Icons.upload_file), title: Text('Upload Excel'))),
+              PopupMenuItem<String>(
+                  value: 'Display Settings',
+                  child: ListTile(leading: Icon(Icons.settings), title: Text('Display Settings'))),
+            ],
           ),
+        ],
+      ),
+      body: Center( // Center the content of the body
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center, // Center vertically
+          crossAxisAlignment: CrossAxisAlignment.center, // Center horizontally
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                children: [
+                  ElevatedButton(
+                    onPressed: _pickFile,
+                    child: Text('Choose Excel File'),
+                  ),
+                  SizedBox(height: 10),
+                  if (_selectedFile != null)
+                    Text('Selected file: ${_selectedFile!.path.split('/').last}'),
+                  SizedBox(height: 20),
+                  ElevatedButton(
+                    onPressed: _isUploading ? null : _uploadFile,
+                    child: _isUploading
+                        ? CircularProgressIndicator()
+                        : Text('Upload and Update Database'),
+                  ),
+                  SizedBox(height: 20),
+                  Text(_uploadStatus),
+                ],
+              ),
+            ),
+            if (_uploadStatus == 'Database updated successfully!')
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  children: [
+                    Text(
+                      'Uploaded Participants:',
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                    ),
+                    SizedBox(height: 10),
+                    DataTable(
+                      columns: const <DataColumn>[
+                        DataColumn(label: Text('First Name')),
+                        DataColumn(label: Text('Last Name')),
+                        DataColumn(label: Text('BIB Number')),
+                      ],
+                      rows: _participants
+                          .map((participant) => DataRow(cells: [
+                                DataCell(Text(participant['first_name'])),
+                                DataCell(Text(participant['last_name'])),
+                                DataCell(Text(participant['bib_number'].toString())),
+                              ]))
+                          .toList(),
+                    ),
+                  ],
+                ),
+              ),
+          ],
         ),
       ),
     );
