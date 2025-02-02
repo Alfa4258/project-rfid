@@ -1,9 +1,9 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:flutter_libserialport/flutter_libserialport.dart';
+import 'dart:typed_data';
 import 'package:provider/provider.dart';
 import 'background_provider.dart';
-import 'dart:typed_data';
 import 'api_service.dart';
 import 'home_page.dart';
 import 'display_settings_page.dart';
@@ -169,6 +169,8 @@ Future<void> _fetchBibDetails(String bibNumber) async {
     });
   }
 }
+
+
 
   @override
   Widget build(BuildContext context) {
