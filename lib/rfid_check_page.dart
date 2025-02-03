@@ -20,10 +20,11 @@ class RFIDTagCheckPage extends StatefulWidget {
   _RFIDTagCheckPageState createState() => _RFIDTagCheckPageState();
 }
 
-class _RFIDTagCheckPageState extends State<RFIDTagCheckPage> with SingleTickerProviderStateMixin {
+class _RFIDTagCheckPageState extends State<RFIDTagCheckPage>
+    with SingleTickerProviderStateMixin {
   final _bibController = TextEditingController();
   final ApiService _apiService = ApiService();
-  
+
   String connectionStatus = "Belum Terhubung";
   String rfidData = "Menunggu data...";
   String filteredRfidData = "Menunggu data...";
@@ -38,24 +39,27 @@ class _RFIDTagCheckPageState extends State<RFIDTagCheckPage> with SingleTickerPr
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
-        WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       _initializeConnection();
     });
   }
 
   void _initializeConnection() {
-    final provider = Provider.of<ConnectionSettingsProvider>(context, listen: false);
+    final provider =
+        Provider.of<ConnectionSettingsProvider>(context, listen: false);
     if (provider.isConnected) {
       _setupDataListeners(provider);
       setState(() {
-        connectionStatus = "Connected to RFID reader (${provider.connectionType})";
+        connectionStatus =
+            "Connected to RFID reader (${provider.connectionType})";
       });
     } else {
       provider.connect().then((success) {
         if (success) {
           _setupDataListeners(provider);
           setState(() {
-            connectionStatus = "Connected to RFID reader (${provider.connectionType})";
+            connectionStatus =
+                "Connected to RFID reader (${provider.connectionType})";
           });
         } else {
           setState(() {
@@ -71,7 +75,8 @@ class _RFIDTagCheckPageState extends State<RFIDTagCheckPage> with SingleTickerPr
   }
 
   void _handleRfidData(Uint8List data) {
-    final hexData = data.map((e) => e.toRadixString(16).padLeft(2, '0')).join(' ');
+    final hexData =
+        data.map((e) => e.toRadixString(16).padLeft(2, '0')).join(' ');
     _processRfidData(hexData);
   }
 
@@ -84,12 +89,14 @@ class _RFIDTagCheckPageState extends State<RFIDTagCheckPage> with SingleTickerPr
   }
 
   void _handleSerialPortData(Uint8List data) {
-    final hexData = data.map((e) => e.toRadixString(16).padLeft(2, '0')).join(' ');
+    final hexData =
+        data.map((e) => e.toRadixString(16).padLeft(2, '0')).join(' ');
     _processRfidData(hexData);
   }
 
   void _handleSocketData(List<int> event) {
-    final hexData = event.map((e) => e.toRadixString(16).padLeft(2, '0')).join(' ');
+    final hexData =
+        event.map((e) => e.toRadixString(16).padLeft(2, '0')).join(' ');
     _processRfidData(hexData);
   }
 
@@ -126,39 +133,40 @@ class _RFIDTagCheckPageState extends State<RFIDTagCheckPage> with SingleTickerPr
     });
   }
 
-Future<void> _fetchBibDetails(String bibNumber) async {
-  if (_isProcessing) return;
+  Future<void> _fetchBibDetails(String bibNumber) async {
+    if (_isProcessing) return;
 
-  setState(() {
-    _isProcessing = true;
-  });
-
-  try {
-    final dbHelper = DatabaseHelper();
-
-    // Ensure the database is initialized
-    await dbHelper.database;  // This will ensure the database is fully initialized before performing any queries
-
-    final bibDetails = await dbHelper.getParticipant(bibNumber);
-
-    if (bibDetails != null) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => BibDetailsPage(bibDetails: bibDetails),
-        ),
-      );
-    } else {
-      _showErrorDialog('BIB Number not found');
-    }
-  } catch (e) {
-    _showErrorDialog('Error fetching BIB details: $e');
-  } finally {
     setState(() {
-      _isProcessing = false;
+      _isProcessing = true;
     });
+
+    try {
+      final dbHelper = DatabaseHelper();
+
+      // Ensure the database is initialized
+      await dbHelper
+          .database; // This will ensure the database is fully initialized before performing any queries
+
+      final bibDetails = await dbHelper.getParticipant(bibNumber);
+
+      if (bibDetails != null) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => BibDetailsPage(bibDetails: bibDetails),
+          ),
+        );
+      } else {
+        _showErrorDialog('BIB Number not found');
+      }
+    } catch (e) {
+      _showErrorDialog('Error fetching BIB details: $e');
+    } finally {
+      setState(() {
+        _isProcessing = false;
+      });
+    }
   }
-}
 
   void _showErrorDialog(String message) {
     showDialog(
@@ -211,7 +219,7 @@ Future<void> _fetchBibDetails(String bibNumber) async {
             padding: const EdgeInsets.all(8.0),
             child: Center(
               child: Text(
-                'RFID Race Result Check',
+                'RFID Tag Check',
                 style: TextStyle(color: Colors.black, fontSize: 16),
               ),
             ),
@@ -265,7 +273,8 @@ Future<void> _fetchBibDetails(String bibNumber) async {
               } else if (value == 'Display Settings') {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => ChangeBackgroundPage()),
+                  MaterialPageRoute(
+                      builder: (context) => ChangeBackgroundPage()),
                 );
               }
             },
