@@ -53,18 +53,19 @@ class _BibDetailsPageState extends State<BibDetailsPage> {
                 : null,
           ),
           child: SafeArea(
-            child: Padding(
-              padding: EdgeInsets.all(24),
-              child: Column(
-                children: [
-                  // Floating BIB Number Container (Box A)
-                  Container(
+            child: Center(
+              child: SingleChildScrollView(
+                child: Padding(
+                  padding: EdgeInsets.all(24),
+                  child: Container(
                     width: double.infinity,
-                    margin: EdgeInsets.symmetric(horizontal: 16, vertical: 60),
+                    constraints: BoxConstraints(
+                      maxWidth: 1440, // Adjust this value as needed
+                    ),
                     decoration: BoxDecoration(
                       color: backgroundImage != null
-                          ? Colors.black.withOpacity(0.6) // Semi-transparent
-                          : Colors.black, // Fully opaque
+                          ? Colors.black.withOpacity(0.6)
+                          : Colors.black,
                       borderRadius: BorderRadius.circular(16),
                       boxShadow: [
                         BoxShadow(
@@ -75,100 +76,42 @@ class _BibDetailsPageState extends State<BibDetailsPage> {
                       ],
                     ),
                     child: Padding(
-                      padding: EdgeInsets.symmetric(vertical: 120),
-                      child: Center(
-                        child: Text(
-                          '${_currentBibDetails!['bib_number']}',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 120,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 2,
+                      padding: EdgeInsets.all(24),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            '${_currentBibDetails!['first_name']} ${_currentBibDetails!['last_name']}',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 120,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            textAlign: TextAlign.center,
                           ),
-                        ),
+                          SizedBox(height: 36),
+                          Text(
+                            '${_currentBibDetails!['bib_number']}',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 120,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          SizedBox(height: 24),
+                          Text(
+                            '${_currentBibDetails!['category']}',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 120,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
                       ),
                     ),
                   ),
-                  // Bottom Row Containers (Box B and C)
-                  Row(
-                    children: [
-                      // Name Container (Box B)
-                      Expanded(
-                        child: Container(
-                          margin: EdgeInsets.only(right: 12),
-                          decoration: BoxDecoration(
-                            color: backgroundImage != null
-                                ? Colors.white
-                                    .withOpacity(0.6) // Semi-transparent
-                                : Colors.white, // Fully opaque
-                            borderRadius: BorderRadius.circular(16),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.1),
-                                blurRadius: 10,
-                                offset: Offset(0, 4),
-                              ),
-                            ],
-                          ),
-                          child: Padding(
-                            padding: EdgeInsets.all(36),
-                            child: Column(
-                              children: [
-                                Icon(Icons.person, size: 32),
-                                SizedBox(height: 8),
-                                Text(
-                                  '${_currentBibDetails!['first_name']} ${_currentBibDetails!['last_name']}',
-                                  style: TextStyle(
-                                    fontSize: 36,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                  textAlign: TextAlign.center,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                      // Category Container (Box C)
-                      Expanded(
-                        child: Container(
-                          margin: EdgeInsets.only(left: 12),
-                          decoration: BoxDecoration(
-                            color: backgroundImage != null
-                                ? Colors.white
-                                    .withOpacity(0.6) // Semi-transparent
-                                : Colors.white, // Fully opaque
-                            borderRadius: BorderRadius.circular(16),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.1),
-                                blurRadius: 10,
-                                offset: Offset(0, 4),
-                              ),
-                            ],
-                          ),
-                          child: Padding(
-                            padding: EdgeInsets.all(36),
-                            child: Column(
-                              children: [
-                                Icon(Icons.flag, size: 32),
-                                SizedBox(height: 8),
-                                Text(
-                                  '${_currentBibDetails!['category']}',
-                                  style: TextStyle(
-                                    fontSize: 36,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                  textAlign: TextAlign.center,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
+                ),
               ),
             ),
           ),
