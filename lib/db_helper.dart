@@ -73,22 +73,23 @@ class DatabaseHelper {
     return await db.query('participant');
   }
 
-  Future<void> updateDatabaseFromExcel(List<Map<String, dynamic>> data) async {
-    final db = await DatabaseHelper().database;
+Future<void> updateDatabaseFromExcel(List<Map<String, dynamic>> data) async {
+  final db = await database;
 
-    await db.transaction((txn) async {
-      for (var row in data) {
-        try {
-          await txn.insert(
-            'participant', // Correct table name
-            row,
-            conflictAlgorithm: ConflictAlgorithm
-                .replace, // Replace rows with the same primary key
-          );
-        } catch (e) {
-          print('Error inserting row: $row, Error: $e');
-        }
+  await db.transaction((txn) async {
+    await txn.delete('participant');
+
+    for (var row in data) {
+      try {
+        await txn.insert(
+          'participant',
+          row,
+          conflictAlgorithm: ConflictAlgorithm.replace, 
+        );
+      } catch (e) {
+        print('Error inserting row: $row, Error: $e');
       }
-    });
+    }
+  });
   }
 }

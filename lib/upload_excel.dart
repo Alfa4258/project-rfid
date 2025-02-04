@@ -45,18 +45,16 @@ class _ExcelUploadPageState extends State<ExcelUploadPage> {
     });
 
     try {
-      // Parse Excel file
       List<Map<String, dynamic>> parsedData =
           await parseExcelFile(_selectedFile!);
 
-      // Update database
       await DatabaseHelper().updateDatabaseFromExcel(parsedData);
 
       setState(() {
         _uploadStatus = 'Database updated successfully!';
       });
 
-      await _fetchParticipants(); // Refresh the participant list
+      await _fetchParticipants();
     } catch (e) {
       setState(() {
         _uploadStatus = 'Error updating database: $e';
@@ -79,13 +77,13 @@ class _ExcelUploadPageState extends State<ExcelUploadPage> {
   @override
   void initState() {
     super.initState();
-    _fetchParticipants(); // Load participants on start
+    _fetchParticipants();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color(0xFFCDC4C4), // Set background color here
+      backgroundColor: Color(0xFFCDC4C4),
       appBar: AppBar(
         backgroundColor: Colors.grey[200],
         title: Row(
@@ -162,15 +160,12 @@ class _ExcelUploadPageState extends State<ExcelUploadPage> {
           ),
         ],
       ),
-      body: Center(
-        // Center the content of the body
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center, // Center vertically
-          crossAxisAlignment: CrossAxisAlignment.center, // Center horizontally
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(16.0),
+      body: Column(
+        children: [
+          Expanded(
+            child: Center(
               child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   ElevatedButton(
                     onPressed: _pickFile,
@@ -178,8 +173,7 @@ class _ExcelUploadPageState extends State<ExcelUploadPage> {
                   ),
                   SizedBox(height: 10),
                   if (_selectedFile != null)
-                    Text(
-                        'Selected file: ${_selectedFile!.path.split('/').last}'),
+                    Text('Selected file: ${_selectedFile!.path.split('/').last}'),
                   SizedBox(height: 20),
                   ElevatedButton(
                     onPressed: _isUploading ? null : _uploadFile,
@@ -192,37 +186,46 @@ class _ExcelUploadPageState extends State<ExcelUploadPage> {
                 ],
               ),
             ),
-            if (_uploadStatus == 'Database updated successfully!')
-              Padding(
+          ),
+          if (_uploadStatus == 'Database updated successfully!')
+            Expanded(
+              child: Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: Column(
                   children: [
                     Text(
                       'Uploaded Participants:',
-                      style:
-                          TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                     ),
                     SizedBox(height: 10),
-                    DataTable(
-                      columns: const <DataColumn>[
-                        DataColumn(label: Text('First Name')),
-                        DataColumn(label: Text('Last Name')),
-                        DataColumn(label: Text('BIB Number')),
-                      ],
-                      rows: _participants
-                          .map((participant) => DataRow(cells: [
-                                DataCell(Text(participant['first_name'])),
-                                DataCell(Text(participant['last_name'])),
-                                DataCell(
-                                    Text(participant['bib_number'].toString())),
-                              ]))
-                          .toList(),
+                    Expanded(
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.vertical,
+                        child: SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: DataTable(
+                            columns: const <DataColumn>[
+                              DataColumn(label: Text('First Name')),
+                              DataColumn(label: Text('Last Name')),
+                              DataColumn(label: Text('BIB Number')),
+                            ],
+                            rows: _participants
+                                .map((participant) => DataRow(cells: [
+                                      DataCell(Text(participant['first_name'])),
+                                      DataCell(Text(participant['last_name'])),
+                                      DataCell(Text(
+                                          participant['bib_number'].toString())),
+                                    ]))
+                                .toList(),
+                          ),
+                        ),
+                      ),
                     ),
                   ],
                 ),
               ),
-          ],
-        ),
+            ),
+        ],
       ),
     );
   }
