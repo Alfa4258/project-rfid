@@ -43,15 +43,22 @@ class ChangeBackgroundPageState extends State<ChangeBackgroundPage>
   @override
   void initState() {
     super.initState();
-    _updateAvailablePorts();
-    _loadConnectionSettings();
     _tabController = TabController(length: 2, vsync: this);
     _tabController.addListener(_handleTabChange);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadConnectionSettings();
+      _updateAvailablePorts();
+    });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _updateConnectionStatus();
   }
 
   @override
   void dispose() {
-    // _disconnectRfidReader();
     _tabController.removeListener(_handleTabChange);
     _tabController.dispose();
     super.dispose();
@@ -65,9 +72,15 @@ class ChangeBackgroundPageState extends State<ChangeBackgroundPage>
     });
   }
 
+  void _updateConnectionStatus() {
+    final provider = Provider.of<ConnectionSettingsProvider>(context, listen: false);
+    setState(() {
+      connectionStatus = provider.isConnected ? "Connected to RFID reader (${provider.connectionType})" : "Disconnected";
+    });
+  }
+
   void _handleConnect() async {
-    final provider =
-        Provider.of<ConnectionSettingsProvider>(context, listen: false);
+    final provider = Provider.of<ConnectionSettingsProvider>(context, listen: false);
 
     provider.setConnectionSettings(
       _currentConnectionType == ConnectionType.RS232 ? "RS232" : "TCP/IP",
@@ -77,75 +90,24 @@ class ChangeBackgroundPageState extends State<ChangeBackgroundPage>
       _baudRate,
     );
 
-    bool success = await provider.connect();
-
-    setState(() {
-      _isConnected = success;
-      connectionStatus = success
-          ? "Connected to RFID reader (${provider.connectionType})"
-          : "Failed to connect";
-    });
+    await provider.connect();
   }
 
   void _handleDisconnect() {
-    final provider =
-        Provider.of<ConnectionSettingsProvider>(context, listen: false);
+    final provider = Provider.of<ConnectionSettingsProvider>(context, listen: false);
     provider.disconnect();
-    setState(() {
-      _isConnected = false;
-      connectionStatus = "Disconnected";
-    });
   }
 
-  Future<bool> _configureSerialPort() async {
-    if (_selectedPort == null) {
-      _updateConnectionStatus("No port selected");
-      return false;
-    }
+  Future<void> _configureSerialPort() async {
+    if (_selectedPort == null) return;
 
-    try {
-      _serialPort = SerialPort(_selectedPort!);
-      _serialPort!.config = SerialPortConfig()..baudRate = _baudRate;
-
-      if (_serialPort!.openReadWrite()) {
-        _updateConnectionStatus("Connected to RFID reader (RS232)");
-        _portReader = SerialPortReader(_serialPort!);
-        _portReader!.stream.listen(
-          _handleSerialPortData,
-          onError: (error) {
-            print("RS232 Error: $error");
-            _updateConnectionStatus("RS232 Error: $error");
-          },
-          onDone: () {
-            _updateConnectionStatus("RS232 connection closed");
-          },
-        );
-        return true;
-      } else {
-        _updateConnectionStatus("Failed to open RS232 port");
-        return false;
-      }
-    } catch (e) {
-      _updateConnectionStatus("RS232 Error: $e");
-      return false;
-    }
+    final provider = Provider.of<ConnectionSettingsProvider>(context, listen: false);
+    await provider.connect();
   }
 
-  Future<bool> _connectToRfidScannerTCP() async {
-    try {
-      _socket = await Socket.connect(_ipAddress, _port);
-      _updateConnectionStatus("Connected to RFID reader (TCP/IP)");
-
-      _socket!.listen(
-        _handleSocketData,
-        onDone: () => _disconnectSocket("TCP/IP connection closed by server"),
-        onError: (error) => _disconnectSocket("TCP/IP Error: $error"),
-      );
-      return true;
-    } catch (e) {
-      _updateConnectionStatus("TCP/IP connection failed: $e");
-      return false;
-    }
+  Future<void> _connectToRFIDScannerTCP() async {
+    final provider = Provider.of<ConnectionSettingsProvider>(context, listen: false);
+    await provider.connect();
   }
 
   void _disconnectRfidReader() {
@@ -160,13 +122,11 @@ class ChangeBackgroundPageState extends State<ChangeBackgroundPage>
     _portReader?.close();
     _serialPort?.close();
     _serialPort = null;
-    _updateConnectionStatus("RS232 connection disconnected");
   }
 
   void _disconnectSocket([String message = "TCP/IP connection disconnected"]) {
     _socket?.destroy();
     _socket = null;
-    _updateConnectionStatus(message);
   }
 
   void _handleSerialPortData(Uint8List data) {
@@ -188,15 +148,8 @@ class ChangeBackgroundPageState extends State<ChangeBackgroundPage>
     });
   }
 
-  void _updateConnectionStatus(String status) {
-    setState(() {
-      connectionStatus = status;
-    });
-  }
-
   void _loadConnectionSettings() {
-    final settings =
-        Provider.of<ConnectionSettingsProvider>(context, listen: false);
+    final settings = Provider.of<ConnectionSettingsProvider>(context, listen: false);
     setState(() {
       _currentConnectionType = settings.connectionType == 'RS232'
           ? ConnectionType.RS232
@@ -494,6 +447,19 @@ class ChangeBackgroundPageState extends State<ChangeBackgroundPage>
                           textAlign: TextAlign.center,
                         ),
                         SizedBox(height: 16),
+                        Consumer<ConnectionSettingsProvider>(
+                          builder: (context, provider, child) {
+                            return Text(
+                              provider.isConnected ? "Connected to RFID reader" : "Disconnected",
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: provider.isConnected ? Colors.green : Colors.red,
+                              ),
+                            );
+                          },
+                        ),
+                        SizedBox(height: 16),
                         TabBar(
                           controller: _tabController,
                           tabs: [
@@ -510,17 +476,6 @@ class ChangeBackgroundPageState extends State<ChangeBackgroundPage>
                               Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  Text(
-                                    "Connection Status: ${_isConnected ? "Connected" : "Disconnected"}",
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                      color: _isConnected
-                                          ? Colors.green
-                                          : Colors.red,
-                                    ),
-                                  ),
-                                  SizedBox(height: 16),
                                   DropdownButton<String>(
                                     value: _selectedPort,
                                     items: _availablePorts.map((String port) {
@@ -529,38 +484,32 @@ class ChangeBackgroundPageState extends State<ChangeBackgroundPage>
                                         child: Text(port),
                                       );
                                     }).toList(),
-                                    onChanged: _isConnected
-                                        ? null
-                                        : (String? newValue) {
-                                            setState(() {
-                                              _selectedPort = newValue;
-                                            });
-                                          },
+                                    onChanged: (String? newValue) {
+                                      setState(() {
+                                        _selectedPort = newValue;
+                                      });
+                                    },
                                     hint: Text('Select COM Port'),
                                   ),
                                   SizedBox(height: 16),
                                   TextFormField(
                                     initialValue: _baudRate.toString(),
-                                    decoration:
-                                        InputDecoration(labelText: 'Baud Rate'),
+                                    decoration: InputDecoration(labelText: 'Baud Rate'),
                                     keyboardType: TextInputType.number,
-                                    onChanged: _isConnected
-                                        ? null
-                                        : (value) {
-                                            setState(() {
-                                              _baudRate =
-                                                  int.tryParse(value) ?? 115200;
-                                            });
-                                          },
+                                    onChanged: (value) {
+                                      setState(() {
+                                        _baudRate = int.tryParse(value) ?? 115200;
+                                      });
+                                    },
                                   ),
                                   SizedBox(height: 16),
-                                  ElevatedButton(
-                                    onPressed: _isConnected
-                                        ? _handleDisconnect
-                                        : _handleConnect,
-                                    child: Text(_isConnected
-                                        ? "Disconnect"
-                                        : "Connect via RS232"),
+                                  Consumer<ConnectionSettingsProvider>(
+                                    builder: (context, provider, child) {
+                                      return ElevatedButton(
+                                        onPressed: provider.isConnected ? _handleDisconnect : _handleConnect,
+                                        child: Text(provider.isConnected ? "Disconnect" : "Connect via RS232"),
+                                      );
+                                    },
                                   ),
                                 ],
                               ),
@@ -569,39 +518,32 @@ class ChangeBackgroundPageState extends State<ChangeBackgroundPage>
                                 children: [
                                   TextFormField(
                                     initialValue: _ipAddress,
-                                    decoration: InputDecoration(
-                                        labelText: 'IP Address'),
-                                    onChanged: _isConnected
-                                        ? null
-                                        : (value) {
-                                            setState(() {
-                                              _ipAddress = value;
-                                            });
-                                          },
+                                    decoration: InputDecoration(labelText: 'IP Address'),
+                                    onChanged: (value) {
+                                      setState(() {
+                                        _ipAddress = value;
+                                      });
+                                    },
                                   ),
                                   SizedBox(height: 16),
                                   TextFormField(
                                     initialValue: _port.toString(),
-                                    decoration:
-                                        InputDecoration(labelText: 'Port'),
+                                    decoration: InputDecoration(labelText: 'Port'),
                                     keyboardType: TextInputType.number,
-                                    onChanged: _isConnected
-                                        ? null
-                                        : (value) {
-                                            setState(() {
-                                              _port =
-                                                  int.tryParse(value) ?? 2022;
-                                            });
-                                          },
+                                    onChanged: (value) {
+                                      setState(() {
+                                        _port = int.tryParse(value) ?? 2022;
+                                      });
+                                    },
                                   ),
                                   SizedBox(height: 16),
-                                  ElevatedButton(
-                                    onPressed: _isConnected
-                                        ? _handleDisconnect
-                                        : _handleConnect,
-                                    child: Text(_isConnected
-                                        ? "Disconnect"
-                                        : "Connect via TCP/IP"),
+                                  Consumer<ConnectionSettingsProvider>(
+                                    builder: (context, provider, child) {
+                                      return ElevatedButton(
+                                        onPressed: provider.isConnected ? _handleDisconnect : _handleConnect,
+                                        child: Text(provider.isConnected ? "Disconnect" : "Connect via TCP/IP"),
+                                      );
+                                    },
                                   ),
                                 ],
                               ),

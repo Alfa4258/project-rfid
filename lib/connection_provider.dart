@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_libserialport/flutter_libserialport.dart';
 import 'dart:io';
 import 'dart:typed_data';
+import 'dart:async';
 
 class ConnectionSettingsProvider with ChangeNotifier {
   String _connectionType = 'RS232';
@@ -12,13 +13,12 @@ class ConnectionSettingsProvider with ChangeNotifier {
   bool _isConnected = false;
 
   SerialPort? _serialPort;
-  SerialPortReader? _portReader;
+  StreamSubscription<Uint8List>? _portSubscription;
   Socket? _socket;
 
   Function(Uint8List)? _onDataReceived;
 
   bool get isConnected => _isConnected;
-
   String get connectionType => _connectionType;
   String? get selectedPort => _selectedPort;
   String get ipAddress => _ipAddress;
@@ -57,8 +57,8 @@ class ConnectionSettingsProvider with ChangeNotifier {
       _serialPort!.config = SerialPortConfig()..baudRate = _baudRate;
 
       if (_serialPort!.openReadWrite()) {
-        _portReader = SerialPortReader(_serialPort!);
-        _portReader!.stream.listen(
+        final reader = SerialPortReader(_serialPort!);
+        _portSubscription = reader.stream.listen(
           (data) {
             if (_onDataReceived != null) {
               _onDataReceived!(data);
@@ -113,12 +113,13 @@ class ConnectionSettingsProvider with ChangeNotifier {
   }
 
   void _cleanup() {
-    _portReader?.close();
+    _portSubscription?.cancel();
     _serialPort?.close();
     _socket?.destroy();
     _serialPort = null;
-    _portReader = null;
+    _portSubscription = null;
     _socket = null;
+    _onDataReceived = null;
   }
 
   void setDataCallback(Function(Uint8List) callback) {

@@ -47,26 +47,13 @@ class _RFIDTagCheckPageState extends State<RFIDTagCheckPage>
   void _initializeConnection() {
     final provider =
         Provider.of<ConnectionSettingsProvider>(context, listen: false);
+    setState(() {
+      connectionStatus = provider.isConnected
+          ? "Connected to RFID reader (${provider.connectionType})"
+          : "Disconnected";
+    });
     if (provider.isConnected) {
       _setupDataListeners(provider);
-      setState(() {
-        connectionStatus =
-            "Connected to RFID reader (${provider.connectionType})";
-      });
-    } else {
-      provider.connect().then((success) {
-        if (success) {
-          _setupDataListeners(provider);
-          setState(() {
-            connectionStatus =
-                "Connected to RFID reader (${provider.connectionType})";
-          });
-        } else {
-          setState(() {
-            connectionStatus = "Failed to connect";
-          });
-        }
-      });
     }
   }
 
@@ -85,6 +72,8 @@ class _RFIDTagCheckPageState extends State<RFIDTagCheckPage>
     _bibController.dispose();
     _debounceTimer?.cancel();
     _tabController.dispose();
+    final provider = Provider.of<ConnectionSettingsProvider>(context, listen: false);
+    provider.removeListener(_onConnectionChanged);
     super.dispose();
   }
 
@@ -186,6 +175,17 @@ class _RFIDTagCheckPageState extends State<RFIDTagCheckPage>
         );
       },
     );
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final provider = Provider.of<ConnectionSettingsProvider>(context, listen: false);
+    provider.addListener(_onConnectionChanged);
+  }
+
+  void _onConnectionChanged() {
+    _initializeConnection();
   }
 
   @override

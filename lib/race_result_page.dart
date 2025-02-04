@@ -47,26 +47,13 @@ class _RaceResultPageState extends State<RaceResultPage>
   void _initializeConnection() {
     final provider =
         Provider.of<ConnectionSettingsProvider>(context, listen: false);
+    setState(() {
+      connectionStatus = provider.isConnected
+          ? "Connected to RFID reader (${provider.connectionType})"
+          : "Disconnected";
+    });
     if (provider.isConnected) {
       _setupDataListeners(provider);
-      setState(() {
-        connectionStatus =
-            "Connected to RFID reader (${provider.connectionType})";
-      });
-    } else {
-      provider.connect().then((success) {
-        if (success) {
-          _setupDataListeners(provider);
-          setState(() {
-            connectionStatus =
-                "Connected to RFID reader (${provider.connectionType})";
-          });
-        } else {
-          setState(() {
-            connectionStatus = "Failed to connect";
-          });
-        }
-      });
     }
   }
 
@@ -85,6 +72,8 @@ class _RaceResultPageState extends State<RaceResultPage>
     _bibController.dispose();
     _debounceTimer?.cancel();
     _tabController.dispose();
+    final provider = Provider.of<ConnectionSettingsProvider>(context, listen: false);
+    provider.removeListener(_onConnectionChanged);
     super.dispose();
   }
 
@@ -175,6 +164,17 @@ class _RaceResultPageState extends State<RaceResultPage>
         _isProcessing = false;
       });
     }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final provider = Provider.of<ConnectionSettingsProvider>(context, listen: false);
+    provider.addListener(_onConnectionChanged);
+  }
+
+  void _onConnectionChanged() {
+    _initializeConnection();
   }
 
   @override
