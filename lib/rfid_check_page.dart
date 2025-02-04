@@ -246,9 +246,24 @@ class _RFIDTagCheckPageState extends State<RFIDTagCheckPage>
             },
             color: Colors.black,
           ),
+          Consumer<ConnectionSettingsProvider>(
+            builder: (context, provider, child) {
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                child: Container(
+                  width: 12,
+                  height: 12,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: provider.isConnected ? Colors.green : Colors.red,
+                  ),
+                ),
+              );
+            },
+          ),
           PopupMenuButton<String>(
             icon: Icon(Icons.menu, color: Colors.black),
-            onSelected: (value) {
+            onSelected: (value) async {
               if (value == 'Home') {
                 Navigator.pushAndRemoveUntil(
                   context,
@@ -270,7 +285,7 @@ class _RFIDTagCheckPageState extends State<RFIDTagCheckPage>
                   context,
                   MaterialPageRoute(builder: (context) => ExcelUploadPage()),
                 );
-              } else if (value == 'Display Settings') {
+              } else if (value == 'Settings') {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
@@ -280,40 +295,28 @@ class _RFIDTagCheckPageState extends State<RFIDTagCheckPage>
             },
             itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
               PopupMenuItem<String>(
-                value: 'Home',
-                child: ListTile(
-                  leading: Icon(Icons.home),
-                  title: Text('Home'),
-                ),
-              ),
+                  value: 'Home',
+                  child:
+                      ListTile(leading: Icon(Icons.home), title: Text('Home'))),
               PopupMenuItem<String>(
-                value: 'RFID Tag Check',
-                child: ListTile(
-                  leading: Icon(Icons.info),
-                  title: Text('RFID Tag Check'),
-                ),
-              ),
+                  value: 'RFID Tag Check',
+                  child: ListTile(
+                      leading: Icon(Icons.info),
+                      title: Text('RFID Tag Check'))),
               PopupMenuItem<String>(
-                value: 'Race Result',
-                child: ListTile(
-                  leading: Icon(Icons.insert_chart_outlined_outlined),
-                  title: Text('Race Result'),
-                ),
-              ),
+                  value: 'Race Result',
+                  child: ListTile(
+                      leading: Icon(Icons.insert_chart_outlined),
+                      title: Text('Race Result'))),
               PopupMenuItem<String>(
-                value: 'Upload Excel',
-                child: ListTile(
-                  leading: Icon(Icons.upload_file),
-                  title: Text('Upload Excel'),
-                ),
-              ),
+                  value: 'Upload Excel',
+                  child: ListTile(
+                      leading: Icon(Icons.upload_file),
+                      title: Text('Upload Excel'))),
               PopupMenuItem<String>(
-                value: 'Display Settings',
-                child: ListTile(
-                  leading: Icon(Icons.settings),
-                  title: Text('Display Settings'),
-                ),
-              ),
+                  value: 'Settings',
+                  child: ListTile(
+                      leading: Icon(Icons.settings), title: Text('Settings'))),
             ],
           ),
         ],

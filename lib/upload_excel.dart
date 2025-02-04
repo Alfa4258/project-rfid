@@ -46,7 +46,8 @@ class _ExcelUploadPageState extends State<ExcelUploadPage> {
 
     try {
       // Parse Excel file
-      List<Map<String, dynamic>> parsedData = await parseExcelFile(_selectedFile!);
+      List<Map<String, dynamic>> parsedData =
+          await parseExcelFile(_selectedFile!);
 
       // Update database
       await DatabaseHelper().updateDatabaseFromExcel(parsedData);
@@ -68,7 +69,8 @@ class _ExcelUploadPageState extends State<ExcelUploadPage> {
   }
 
   Future<void> _fetchParticipants() async {
-    List<Map<String, dynamic>> participants = await DatabaseHelper().getAllParticipants();
+    List<Map<String, dynamic>> participants =
+        await DatabaseHelper().getAllParticipants();
     setState(() {
       _participants = participants;
     });
@@ -124,7 +126,7 @@ class _ExcelUploadPageState extends State<ExcelUploadPage> {
                   context,
                   MaterialPageRoute(builder: (context) => ExcelUploadPage()),
                 );
-              } else if (value == 'Display Settings') {
+              } else if (value == 'Settings') {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
@@ -135,24 +137,33 @@ class _ExcelUploadPageState extends State<ExcelUploadPage> {
             itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
               PopupMenuItem<String>(
                   value: 'Home',
-                  child: ListTile(leading: Icon(Icons.home), title: Text('Home'))),
+                  child:
+                      ListTile(leading: Icon(Icons.home), title: Text('Home'))),
               PopupMenuItem<String>(
                   value: 'RFID Tag Check',
-                  child: ListTile(leading: Icon(Icons.info), title: Text('RFID Tag Check'))),
+                  child: ListTile(
+                      leading: Icon(Icons.info),
+                      title: Text('RFID Tag Check'))),
               PopupMenuItem<String>(
                   value: 'Race Result',
-                  child: ListTile(leading: Icon(Icons.insert_chart_outlined), title: Text('Race Result'))),
+                  child: ListTile(
+                      leading: Icon(Icons.insert_chart_outlined),
+                      title: Text('Race Result'))),
               PopupMenuItem<String>(
                   value: 'Upload Excel',
-                  child: ListTile(leading: Icon(Icons.upload_file), title: Text('Upload Excel'))),
+                  child: ListTile(
+                      leading: Icon(Icons.upload_file),
+                      title: Text('Upload Excel'))),
               PopupMenuItem<String>(
-                  value: 'Display Settings',
-                  child: ListTile(leading: Icon(Icons.settings), title: Text('Display Settings'))),
+                  value: 'Settings',
+                  child: ListTile(
+                      leading: Icon(Icons.settings), title: Text('Settings'))),
             ],
           ),
         ],
       ),
-      body: Center( // Center the content of the body
+      body: Center(
+        // Center the content of the body
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center, // Center vertically
           crossAxisAlignment: CrossAxisAlignment.center, // Center horizontally
@@ -167,7 +178,8 @@ class _ExcelUploadPageState extends State<ExcelUploadPage> {
                   ),
                   SizedBox(height: 10),
                   if (_selectedFile != null)
-                    Text('Selected file: ${_selectedFile!.path.split('/').last}'),
+                    Text(
+                        'Selected file: ${_selectedFile!.path.split('/').last}'),
                   SizedBox(height: 20),
                   ElevatedButton(
                     onPressed: _isUploading ? null : _uploadFile,
@@ -187,7 +199,8 @@ class _ExcelUploadPageState extends State<ExcelUploadPage> {
                   children: [
                     Text(
                       'Uploaded Participants:',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      style:
+                          TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                     ),
                     SizedBox(height: 10),
                     DataTable(
@@ -200,7 +213,8 @@ class _ExcelUploadPageState extends State<ExcelUploadPage> {
                           .map((participant) => DataRow(cells: [
                                 DataCell(Text(participant['first_name'])),
                                 DataCell(Text(participant['last_name'])),
-                                DataCell(Text(participant['bib_number'].toString())),
+                                DataCell(
+                                    Text(participant['bib_number'].toString())),
                               ]))
                           .toList(),
                     ),

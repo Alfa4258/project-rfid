@@ -20,9 +20,10 @@ class RaceResultPage extends StatefulWidget {
   _RaceResultPageState createState() => _RaceResultPageState();
 }
 
-class _RaceResultPageState extends State<RaceResultPage> with SingleTickerProviderStateMixin {
+class _RaceResultPageState extends State<RaceResultPage>
+    with SingleTickerProviderStateMixin {
   final TextEditingController _bibController = TextEditingController();
-  final ApiService _apiService = ApiService(); 
+  final ApiService _apiService = ApiService();
 
   String connectionStatus = "Belum Terhubung";
   String rfidData = "Menunggu data...";
@@ -38,24 +39,27 @@ class _RaceResultPageState extends State<RaceResultPage> with SingleTickerProvid
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
-        WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       _initializeConnection();
     });
   }
 
   void _initializeConnection() {
-    final provider = Provider.of<ConnectionSettingsProvider>(context, listen: false);
+    final provider =
+        Provider.of<ConnectionSettingsProvider>(context, listen: false);
     if (provider.isConnected) {
       _setupDataListeners(provider);
       setState(() {
-        connectionStatus = "Connected to RFID reader (${provider.connectionType})";
+        connectionStatus =
+            "Connected to RFID reader (${provider.connectionType})";
       });
     } else {
       provider.connect().then((success) {
         if (success) {
           _setupDataListeners(provider);
           setState(() {
-            connectionStatus = "Connected to RFID reader (${provider.connectionType})";
+            connectionStatus =
+                "Connected to RFID reader (${provider.connectionType})";
           });
         } else {
           setState(() {
@@ -71,7 +75,8 @@ class _RaceResultPageState extends State<RaceResultPage> with SingleTickerProvid
   }
 
   void _handleRfidData(Uint8List data) {
-    final hexData = data.map((e) => e.toRadixString(16).padLeft(2, '0')).join(' ');
+    final hexData =
+        data.map((e) => e.toRadixString(16).padLeft(2, '0')).join(' ');
     _processRfidData(hexData);
   }
 
@@ -136,41 +141,41 @@ class _RaceResultPageState extends State<RaceResultPage> with SingleTickerProvid
     });
   }
 
-Future<void> _fetchBibDetails(String bibNumber) async {
-  if (_isProcessing) return;
+  Future<void> _fetchBibDetails(String bibNumber) async {
+    if (_isProcessing) return;
 
-  setState(() {
-    _isProcessing = true;
-  });
-
-  try {
-    final dbHelper = DatabaseHelper();
-
-    // Ensure the database is initialized
-    await dbHelper.database;  // This will ensure the database is fully initialized before performing any queries
-
-    final raceResultsDetails = await dbHelper.getParticipant(bibNumber);
-
-    if (raceResultsDetails != null) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => RaceResultsDetailsPage(raceResultsDetails: raceResultsDetails),
-        ),
-      );
-    } else {
-      _showErrorDialog('BIB Number not found');
-    }
-  } catch (e) {
-    _showErrorDialog('Error fetching BIB details: $e');
-  } finally {
     setState(() {
-      _isProcessing = false;
+      _isProcessing = true;
     });
+
+    try {
+      final dbHelper = DatabaseHelper();
+
+      // Ensure the database is initialized
+      await dbHelper
+          .database; // This will ensure the database is fully initialized before performing any queries
+
+      final raceResultsDetails = await dbHelper.getParticipant(bibNumber);
+
+      if (raceResultsDetails != null) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) =>
+                RaceResultsDetailsPage(raceResultsDetails: raceResultsDetails),
+          ),
+        );
+      } else {
+        _showErrorDialog('BIB Number not found');
+      }
+    } catch (e) {
+      _showErrorDialog('Error fetching BIB details: $e');
+    } finally {
+      setState(() {
+        _isProcessing = false;
+      });
+    }
   }
-}
-
-
 
   @override
   Widget build(BuildContext context) {
@@ -230,9 +235,24 @@ Future<void> _fetchBibDetails(String bibNumber) async {
             },
             color: Colors.black,
           ),
+          Consumer<ConnectionSettingsProvider>(
+            builder: (context, provider, child) {
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                child: Container(
+                  width: 12,
+                  height: 12,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: provider.isConnected ? Colors.green : Colors.red,
+                  ),
+                ),
+              );
+            },
+          ),
           PopupMenuButton<String>(
             icon: Icon(Icons.menu, color: Colors.black),
-            onSelected: (value) {
+            onSelected: (value) async {
               if (value == 'Home') {
                 Navigator.pushAndRemoveUntil(
                   context,
@@ -254,49 +274,38 @@ Future<void> _fetchBibDetails(String bibNumber) async {
                   context,
                   MaterialPageRoute(builder: (context) => ExcelUploadPage()),
                 );
-              } else if (value == 'Display Settings') {
+              } else if (value == 'Settings') {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => ChangeBackgroundPage()),
+                  MaterialPageRoute(
+                      builder: (context) => ChangeBackgroundPage()),
                 );
               }
             },
             itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
               PopupMenuItem<String>(
-                value: 'Home',
-                child: ListTile(
-                  leading: Icon(Icons.home),
-                  title: Text('Home'),
-                ),
-              ),
+                  value: 'Home',
+                  child:
+                      ListTile(leading: Icon(Icons.home), title: Text('Home'))),
               PopupMenuItem<String>(
-                value: 'RFID Tag Check',
-                child: ListTile(
-                  leading: Icon(Icons.info),
-                  title: Text('RFID Tag Check'),
-                ),
-              ),
+                  value: 'RFID Tag Check',
+                  child: ListTile(
+                      leading: Icon(Icons.info),
+                      title: Text('RFID Tag Check'))),
               PopupMenuItem<String>(
-                value: 'Race Result',
-                child: ListTile(
-                  leading: Icon(Icons.insert_chart_outlined_outlined),
-                  title: Text('Race Result'),
-                ),
-              ),
+                  value: 'Race Result',
+                  child: ListTile(
+                      leading: Icon(Icons.insert_chart_outlined),
+                      title: Text('Race Result'))),
               PopupMenuItem<String>(
-                value: 'Upload Excel',
-                child: ListTile(
-                  leading: Icon(Icons.upload_file),
-                  title: Text('Upload Excel'),
-                ),
-              ),
+                  value: 'Upload Excel',
+                  child: ListTile(
+                      leading: Icon(Icons.upload_file),
+                      title: Text('Upload Excel'))),
               PopupMenuItem<String>(
-                value: 'Display Settings',
-                child: ListTile(
-                  leading: Icon(Icons.settings),
-                  title: Text('Display Settings'),
-                ),
-              ),
+                  value: 'Settings',
+                  child: ListTile(
+                      leading: Icon(Icons.settings), title: Text('Settings'))),
             ],
           ),
         ],
@@ -324,9 +333,9 @@ Future<void> _fetchBibDetails(String bibNumber) async {
                 ),
               )
             : null,
-   ),
- );
-}
+      ),
+    );
+  }
 
   void _showErrorDialog(String message) {
     showDialog(
