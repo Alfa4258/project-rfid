@@ -3,10 +3,8 @@ import 'package:provider/provider.dart';
 import 'dart:io';
 import 'api_service.dart';
 import 'home_page.dart';
-import 'rfid_check_page.dart';
-import 'display_settings_page.dart';
-import 'race_result_page.dart';
 import 'background_provider.dart';
+import 'timeout_provider.dart';
 
 class RaceResultsDetailsPage extends StatefulWidget {
   final Map<String, dynamic> raceResultsDetails;
@@ -19,7 +17,6 @@ class RaceResultsDetailsPage extends StatefulWidget {
 }
 
 class _RaceResultsDetailsPageState extends State<RaceResultsDetailsPage> {
-  final TextEditingController _bibController = TextEditingController();
   Map<String, dynamic>? _currentBibDetails;
   bool _isOverviewSelected = true;
 
@@ -27,6 +24,16 @@ class _RaceResultsDetailsPageState extends State<RaceResultsDetailsPage> {
   void initState() {
     super.initState();
     _currentBibDetails = widget.raceResultsDetails;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final timeoutProvider =
+          Provider.of<TimeoutProvider>(context, listen: false);
+      Future.delayed(Duration(seconds: timeoutProvider.timeoutDuration), () {
+        if (mounted) {
+          Navigator.pop(context);
+        }
+      });
+    });
   }
 
   @override
@@ -45,7 +52,6 @@ class _RaceResultsDetailsPageState extends State<RaceResultsDetailsPage> {
       },
       child: Scaffold(
         backgroundColor: Color(0xFFE5E5E5),
-        appBar: _buildAppBar(),
         body: Container(
           decoration: BoxDecoration(
             image: backgroundImage != null
@@ -60,14 +66,16 @@ class _RaceResultsDetailsPageState extends State<RaceResultsDetailsPage> {
                   builder: (context, constraints) {
                     return SingleChildScrollView(
                       child: ConstrainedBox(
-                        constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                        constraints:
+                            BoxConstraints(minHeight: constraints.maxHeight),
                         child: IntrinsicHeight(
                           child: Column(
                             children: [
                               _buildBibHeader(),
                               Expanded(
                                 child: Row(
-                                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
                                   children: [
                                     Expanded(
                                       flex: 2,
@@ -96,49 +104,6 @@ class _RaceResultsDetailsPageState extends State<RaceResultsDetailsPage> {
               : Center(child: CircularProgressIndicator()),
         ),
       ),
-    );
-  }
-
-  AppBar _buildAppBar() {
-    return AppBar(
-      backgroundColor: Colors.white,
-      elevation: 2,
-      title: Row(
-        children: [
-          Image.asset('assets/logo.png', height: 40),
-          SizedBox(width: 12),
-          Text(
-            'Labsco Sport',
-            style: TextStyle(
-              color: Colors.black,
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ],
-      ),
-      actions: [
-        Container(
-          width: 220,
-          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          child: TextField(
-            controller: _bibController,
-            decoration: InputDecoration(
-              contentPadding: EdgeInsets.symmetric(horizontal: 16),
-              hintText: "Enter BIB Number",
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide(color: Colors.grey[300]!),
-              ),
-              suffixIcon: IconButton(
-                icon: Icon(Icons.search),
-                onPressed: _handleSearch,
-              ),
-            ),
-          ),
-        ),
-        _buildMenuButton(),
-      ],
     );
   }
 
@@ -285,7 +250,9 @@ class _RaceResultsDetailsPageState extends State<RaceResultsDetailsPage> {
           decoration: BoxDecoration(
             border: Border(
               bottom: BorderSide(
-                color: isSelected ? const Color.fromARGB(255, 0, 0, 0) : Colors.transparent,
+                color: isSelected
+                    ? const Color.fromARGB(255, 0, 0, 0)
+                    : Colors.transparent,
                 width: 3,
               ),
             ),
@@ -293,7 +260,9 @@ class _RaceResultsDetailsPageState extends State<RaceResultsDetailsPage> {
           child: Text(
             text,
             style: TextStyle(
-              color: isSelected ? const Color.fromARGB(255, 0, 0, 0) : Colors.grey[600],
+              color: isSelected
+                  ? const Color.fromARGB(255, 0, 0, 0)
+                  : Colors.grey[600],
               fontSize: 18,
               fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
             ),
@@ -385,7 +354,8 @@ class _RaceResultsDetailsPageState extends State<RaceResultsDetailsPage> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.speed, size: 32, color: const Color.fromARGB(255, 0, 0, 0)),
+          Icon(Icons.speed,
+              size: 32, color: const Color.fromARGB(255, 0, 0, 0)),
           SizedBox(height: 8),
           Text(
             'Pace',
@@ -406,74 +376,6 @@ class _RaceResultsDetailsPageState extends State<RaceResultsDetailsPage> {
         ],
       ),
     );
-  }
-
-  Widget _buildMenuButton() {
-    return PopupMenuButton<String>(
-      icon: Icon(Icons.menu, color: Colors.black),
-      onSelected: _handleMenuSelection,
-      itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
-        _buildMenuItem('Home', Icons.home),
-        _buildMenuItem('RFID Tag Check', Icons.info),
-        _buildMenuItem('Race Result', Icons.insert_chart_outlined_outlined),
-        _buildMenuItem('Display Settings', Icons.settings),
-      ],
-    );
-  }
-
-  PopupMenuItem<String> _buildMenuItem(String value, IconData icon) {
-    return PopupMenuItem<String>(
-      value: value,
-      child: ListTile(
-        leading: Icon(icon),
-        title: Text(value),
-      ),
-    );
-  }
-
-  void _handleSearch() async {
-    String bibNumber = _bibController.text.trim();
-    if (bibNumber.isEmpty) {
-      _showErrorDialog('Please enter a BIB number');
-      return;
-    }
-
-    try {
-      Map<String, dynamic>? bibDetails = await widget.apiService.fetchBibDetails(bibNumber);
-      setState(() => _currentBibDetails = bibDetails);
-      if (bibDetails == null) {
-        _showErrorDialog('BIB Number not found');
-      }
-    } catch (e) {
-      _showErrorDialog('Error fetching BIB details');
-    }
-  }
-
-  void _handleMenuSelection(String value) {
-    switch (value) {
-      case 'Home':
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(builder: (context) => HomePage()),
-          (route) => false,
-        );
-      case 'RFID Tag Check':
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => RFIDTagCheckPage()),
-        );
-      case 'Race Result':
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => RaceResultPage()),
-        );
-      case 'Display Settings':
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => ChangeBackgroundPage()),
-        );
-        break;
-    }
   }
 
   void _showErrorDialog(String message) {
