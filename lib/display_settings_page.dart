@@ -10,6 +10,7 @@ import 'rfid_check_page.dart';
 import 'race_result_page.dart';
 import 'upload_excel.dart';
 import 'connection_provider.dart';
+import 'timeout_provider.dart';
 
 enum ConnectionType { RS232, TCPIP }
 
@@ -18,7 +19,8 @@ class ChangeBackgroundPage extends StatefulWidget {
   ChangeBackgroundPageState createState() => ChangeBackgroundPageState();
 }
 
-class ChangeBackgroundPageState extends State<ChangeBackgroundPage> with SingleTickerProviderStateMixin {
+class ChangeBackgroundPageState extends State<ChangeBackgroundPage>
+    with SingleTickerProviderStateMixin {
   File? _homeBannerImage;
   File? _displayBackgroundImage;
 
@@ -64,8 +66,9 @@ class ChangeBackgroundPageState extends State<ChangeBackgroundPage> with SingleT
   }
 
   void _handleConnect() async {
-    final provider = Provider.of<ConnectionSettingsProvider>(context, listen: false);
-    
+    final provider =
+        Provider.of<ConnectionSettingsProvider>(context, listen: false);
+
     provider.setConnectionSettings(
       _currentConnectionType == ConnectionType.RS232 ? "RS232" : "TCP/IP",
       _selectedPort,
@@ -75,15 +78,18 @@ class ChangeBackgroundPageState extends State<ChangeBackgroundPage> with SingleT
     );
 
     bool success = await provider.connect();
-    
+
     setState(() {
       _isConnected = success;
-      connectionStatus = success ? "Connected to RFID reader (${provider.connectionType})" : "Failed to connect";
+      connectionStatus = success
+          ? "Connected to RFID reader (${provider.connectionType})"
+          : "Failed to connect";
     });
   }
 
   void _handleDisconnect() {
-    final provider = Provider.of<ConnectionSettingsProvider>(context, listen: false);
+    final provider =
+        Provider.of<ConnectionSettingsProvider>(context, listen: false);
     provider.disconnect();
     setState(() {
       _isConnected = false;
@@ -189,7 +195,8 @@ class ChangeBackgroundPageState extends State<ChangeBackgroundPage> with SingleT
   }
 
   void _loadConnectionSettings() {
-    final settings = Provider.of<ConnectionSettingsProvider>(context, listen: false);
+    final settings =
+        Provider.of<ConnectionSettingsProvider>(context, listen: false);
     setState(() {
       _currentConnectionType = settings.connectionType == 'RS232'
           ? ConnectionType.RS232
@@ -202,7 +209,8 @@ class ChangeBackgroundPageState extends State<ChangeBackgroundPage> with SingleT
   }
 
   Future<void> _pickImage(bool isHomeBanner) async {
-    FilePickerResult? result = await FilePicker.platform.pickFiles(type: FileType.image);
+    FilePickerResult? result =
+        await FilePicker.platform.pickFiles(type: FileType.image);
 
     if (result != null && result.files.single.path != null) {
       setState(() {
@@ -216,7 +224,8 @@ class ChangeBackgroundPageState extends State<ChangeBackgroundPage> with SingleT
   }
 
   void _applySettings(BuildContext context) {
-    final backgroundProvider = Provider.of<BackgroundProvider>(context, listen: false);
+    final backgroundProvider =
+        Provider.of<BackgroundProvider>(context, listen: false);
     if (_homeBannerImage != null) {
       backgroundProvider.setHomeBannerImage(_homeBannerImage);
     }
@@ -224,13 +233,25 @@ class ChangeBackgroundPageState extends State<ChangeBackgroundPage> with SingleT
       backgroundProvider.setDisplayBackgroundImage(_displayBackgroundImage);
     }
 
-    final connectionSettingsProvider = Provider.of<ConnectionSettingsProvider>(context, listen: false);
+    final connectionSettingsProvider =
+        Provider.of<ConnectionSettingsProvider>(context, listen: false);
     connectionSettingsProvider.setConnectionSettings(
       _currentConnectionType == ConnectionType.RS232 ? "RS232" : "TCP/IP",
       _selectedPort,
       _ipAddress,
       _port,
       _baudRate,
+    );
+
+    // Apply the timeout duration
+    final timeoutProvider =
+        Provider.of<TimeoutProvider>(context, listen: false);
+    timeoutProvider.applyTimeoutDuration();
+
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (context) => HomePage()),
+      (route) => false,
     );
 
     Navigator.pushAndRemoveUntil(
@@ -411,6 +432,45 @@ class ChangeBackgroundPageState extends State<ChangeBackgroundPage> with SingleT
                   onPressed: () => _pickImage(false),
                   child: Text('Pick Display Background Image'),
                 ),
+                Consumer<TimeoutProvider>(
+                  builder: (context, timeoutProvider, child) {
+                    return Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Display Timeout (seconds):',
+                            style: TextStyle(
+                                fontSize: 18, fontWeight: FontWeight.bold),
+                          ),
+                          SizedBox(height: 8),
+                          Slider(
+                            value:
+                                timeoutProvider.tempTimeoutDuration.toDouble(),
+                            min: 5,
+                            max: 60,
+                            divisions: 11,
+                            label:
+                                timeoutProvider.tempTimeoutDuration.toString(),
+                            onChanged: (value) {
+                              timeoutProvider
+                                  .setTempTimeoutDuration(value.round());
+                            },
+                          ),
+                          Text(
+                            'New timeout: ${timeoutProvider.tempTimeoutDuration} seconds',
+                            style: TextStyle(fontSize: 16),
+                          ),
+                          Text(
+                            'Current timeout: ${timeoutProvider.timeoutDuration} seconds',
+                            style: TextStyle(fontSize: 16),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
                 SizedBox(height: 40),
                 Text(
                   'RFID Connection Settings',
@@ -455,7 +515,9 @@ class ChangeBackgroundPageState extends State<ChangeBackgroundPage> with SingleT
                                     style: TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.bold,
-                                      color: _isConnected ? Colors.green : Colors.red,
+                                      color: _isConnected
+                                          ? Colors.green
+                                          : Colors.red,
                                     ),
                                   ),
                                   SizedBox(height: 16),
@@ -467,30 +529,38 @@ class ChangeBackgroundPageState extends State<ChangeBackgroundPage> with SingleT
                                         child: Text(port),
                                       );
                                     }).toList(),
-                                    onChanged: _isConnected ? null : (String? newValue) {
-                                      setState(() {
-                                        _selectedPort = newValue;
-                                      });
-                                    },
+                                    onChanged: _isConnected
+                                        ? null
+                                        : (String? newValue) {
+                                            setState(() {
+                                              _selectedPort = newValue;
+                                            });
+                                          },
                                     hint: Text('Select COM Port'),
                                   ),
                                   SizedBox(height: 16),
                                   TextFormField(
                                     initialValue: _baudRate.toString(),
-                                    decoration: InputDecoration(labelText: 'Baud Rate'),
+                                    decoration:
+                                        InputDecoration(labelText: 'Baud Rate'),
                                     keyboardType: TextInputType.number,
                                     onChanged: _isConnected
                                         ? null
                                         : (value) {
                                             setState(() {
-                                              _baudRate = int.tryParse(value) ?? 115200;
+                                              _baudRate =
+                                                  int.tryParse(value) ?? 115200;
                                             });
                                           },
                                   ),
                                   SizedBox(height: 16),
                                   ElevatedButton(
-                                    onPressed: _isConnected ? _handleDisconnect : _handleConnect,
-                                    child: Text(_isConnected ? "Disconnect" : "Connect via RS232"),
+                                    onPressed: _isConnected
+                                        ? _handleDisconnect
+                                        : _handleConnect,
+                                    child: Text(_isConnected
+                                        ? "Disconnect"
+                                        : "Connect via RS232"),
                                   ),
                                 ],
                               ),
@@ -499,7 +569,8 @@ class ChangeBackgroundPageState extends State<ChangeBackgroundPage> with SingleT
                                 children: [
                                   TextFormField(
                                     initialValue: _ipAddress,
-                                    decoration: InputDecoration(labelText: 'IP Address'),
+                                    decoration: InputDecoration(
+                                        labelText: 'IP Address'),
                                     onChanged: _isConnected
                                         ? null
                                         : (value) {
@@ -511,20 +582,26 @@ class ChangeBackgroundPageState extends State<ChangeBackgroundPage> with SingleT
                                   SizedBox(height: 16),
                                   TextFormField(
                                     initialValue: _port.toString(),
-                                    decoration: InputDecoration(labelText: 'Port'),
+                                    decoration:
+                                        InputDecoration(labelText: 'Port'),
                                     keyboardType: TextInputType.number,
                                     onChanged: _isConnected
                                         ? null
                                         : (value) {
                                             setState(() {
-                                              _port = int.tryParse(value) ?? 2022;
+                                              _port =
+                                                  int.tryParse(value) ?? 2022;
                                             });
                                           },
                                   ),
                                   SizedBox(height: 16),
                                   ElevatedButton(
-                                    onPressed: _isConnected ? _handleDisconnect : _handleConnect,
-                                    child: Text(_isConnected ? "Disconnect" : "Connect via TCP/IP"),
+                                    onPressed: _isConnected
+                                        ? _handleDisconnect
+                                        : _handleConnect,
+                                    child: Text(_isConnected
+                                        ? "Disconnect"
+                                        : "Connect via TCP/IP"),
                                   ),
                                 ],
                               ),

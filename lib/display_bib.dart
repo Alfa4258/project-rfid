@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'dart:io';
 import 'background_provider.dart';
+import 'timeout_provider.dart';
 import 'home_page.dart';
 
 class BibDetailsPage extends StatefulWidget {
@@ -21,10 +22,14 @@ class _BibDetailsPageState extends State<BibDetailsPage> {
     super.initState();
     _currentBibDetails = widget.bibDetails;
 
-    Future.delayed(Duration(seconds: 10), () {
-      if (mounted) {
-        Navigator.pop(context);
-      }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final timeoutProvider =
+          Provider.of<TimeoutProvider>(context, listen: false);
+      Future.delayed(Duration(seconds: timeoutProvider.timeoutDuration), () {
+        if (mounted) {
+          Navigator.pop(context);
+        }
+      });
     });
   }
 
